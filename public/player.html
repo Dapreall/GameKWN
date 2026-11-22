@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jejak Identitas Nusantara - Pemain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="player">
+
+  <section id="join" class="screen">
+    <div class="brand">
+      <img id="logo-emblem" class="emblem pixel-img" alt="" width="72" height="72">
+      <h1>Jejak Identitas<br>Nusantara</h1>
+    </div>
+    <p class="muted">Masukkan nama kamu dan nama tim. Kalau nama tim belum ada, tim akan dibuat otomatis.</p>
+    <form id="join-form" class="card" autocomplete="off">
+      <label>Nama kamu
+        <input id="name" maxlength="20" required>
+      </label>
+      <label>Nama tim
+        <input id="team" maxlength="20" required>
+      </label>
+      <button type="submit" class="btn">Masuk</button>
+      <p id="join-error" class="error" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="game" class="screen" hidden>
+    <header class="topbar">
+      <div class="team"><img id="team-dot" class="dot pixel-img" alt=""><span id="team-name"></span></div>
+      <div class="score">Skor <b id="my-score">0</b></div>
+    </header>
+
+    <section class="card">
+      <div class="row" style="justify-content: space-between">
+        <span id="round-title" class="round-title">Menunggu host</span>
+        <span id="timer" class="timer"></span>
+      </div>
+      <p id="prompt" class="prompt"></p>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section id="board-card" class="card" hidden>
+      <p class="label">Papan rakit tim (<span id="board-count">0</span> dari 9)</p>
+      <div id="board" class="board"></div>
+      <p id="carry" class="status"></p>
+    </section>
+
+    <section id="pickup-area" class="card pickup-area" hidden>
+      <button id="pickup-btn" type="button" class="btn pickup" disabled>Ambil Barang</button>
+      <p class="muted small">Tombol aktif kalau potongan sudah sangat dekat.</p>
+    </section>
+
+    <section id="stick-area" class="card stick-area" hidden>
+      <div id="dpad" class="dpad">
+        <button type="button" class="dpad-btn dpad-up" data-dx="0" data-dy="-1" aria-label="Atas">&#9650;</button>
+        <button type="button" class="dpad-btn dpad-left" data-dx="-1" data-dy="0" aria-label="Kiri">&#9664;</button>
+        <button type="button" class="dpad-btn dpad-down" data-dx="0" data-dy="1" aria-label="Bawah">&#9660;</button>
+        <button type="button" class="dpad-btn dpad-right" data-dx="1" data-dy="0" aria-label="Kanan">&#9654;</button>
+      </div>
+      <p class="muted small">Tahan tombol arah untuk menggerakkan karakter tim.</p>
+    </section>
+
+    <section id="options-card" class="card" hidden>
+      <p class="label">Pilih jawaban bersama tim</p>
+      <div id="options" class="options"></div>
+    </section>
+
+    <section class="card">
+      <p class="label">Papan skor</p>
+      <ol id="ranking" class="ranking"></ol>
+    </section>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="pixelart.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>

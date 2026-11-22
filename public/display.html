@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jejak Identitas Nusantara - Layar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="display">
+
+  <main class="layout">
+    <section class="map-wrap">
+      <canvas id="map" width="1200" height="800" aria-label="Peta permainan"></canvas>
+      <div id="map-labels" class="map-labels" aria-hidden="true"></div>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <div class="brand-row">
+          <img id="logo-emblem" class="emblem pixel-img" alt="" width="40" height="40">
+          <div>
+            <p id="phase-label" class="label">Menunggu</p>
+            <h2 id="round-title">Jejak Identitas Nusantara</h2>
+          </div>
+        </div>
+        <p id="timer" class="timer"></p>
+        <p id="prompt" class="prompt"></p>
+        <div id="stage-extra"></div>
+      </div>
+
+      <div class="card">
+        <p class="label">Papan skor</p>
+        <ol id="ranking" class="ranking"></ol>
+      </div>
+
+      <div class="card">
+        <p class="label">Buka di HP (satu WiFi dengan laptop ini)</p>
+        <ul id="urls" class="urls"></ul>
+        <p id="team-count" class="muted small"></p>
+      </div>
+
+      <div class="card" id="host">
+        <p class="label">Kontrol host</p>
+        <div id="host-login" class="row">
+          <input id="pin" type="password" placeholder="PIN host" maxlength="12" aria-label="PIN host">
+          <button id="pin-btn" class="btn" type="button">Buka</button>
+        </div>
+        <div id="host-controls" class="row" hidden>
+          <button id="btn-start" class="btn" type="button">Mulai</button>
+          <button id="btn-skip" class="btn ghost" type="button">Lewati tahap</button>
+          <button id="btn-reset" class="btn ghost danger" type="button">Reset</button>
+        </div>
+        <p id="host-msg" class="status" role="status"></p>
+      </div>
+    </aside>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="pixelart.js"></script>
+  <script src="display.js"></script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+/* Gaya bersama untuk halaman pemain (HP) dan layar proyektor */
+/* Tema: retro pixel-art, gelap, konsisten di kedua halaman. */
+
+[hidden] { display: none !important; }
+
+* { box-sizing: border-box; }
+
+:root {
+  --bg: #0f2a38;
+  --bg-deep: #0a1f2b;
+  --card: #163c4f;
+  --card-edge: #0a2330;
+  --card-hi: #2a5872;
+  --fg: #eef6f8;
+  --muted: #9fc6d4;
+  --line: #2d5a6e;
+  --accent: #ef5b4e;
+  --accent-dark: #a8362c;
+  --accent-soft: #3a2b2a;
+  --gold: #ffcf5c;
+  --good: #6fd38a;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 4px 4px;
+  color: var(--fg);
+  font: 18px/1.5 "VT323", monospace;
+  -webkit-font-smoothing: none;
+}
+
+h1, h2 { margin: 0 0 8px; line-height: 1.25; font-family: "Press Start 2P", monospace; text-shadow: 2px 2px 0 var(--bg-deep); }
+h1 { font-size: 18px; }
+h2 { font-size: 15px; }
+
+.pixel-img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-family: "Press Start 2P", monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-shadow: 1px 1px 0 var(--bg-deep);
+}
+.status { margin: 8px 0 0; color: var(--muted); font-size: 16px; min-height: 1.4em; }
+.error { color: var(--accent); font-size: 15px; min-height: 1.4em; margin: 8px 0 0; }
+
+/* ---------- Kartu bergaya "panel" piksel ---------- */
+.card {
+  background: var(--card);
+  border: 3px solid var(--card-edge);
+  box-shadow:
+    inset 2px 2px 0 var(--card-hi),
+    inset -2px -2px 0 var(--card-edge),
+    0 3px 0 var(--bg-deep);
+  border-radius: 0;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ---------- Tombol bergaya tombol konsol 8-bit ---------- */
+.btn {
+  font: 13px "Press Start 2P", monospace;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 0;
+  background: var(--accent);
+  color: #fff3ee;
+  cursor: pointer;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.35),
+    inset -3px -3px 0 var(--accent-dark),
+    0 3px 0 var(--bg-deep);
+  letter-spacing: 0.03em;
+}
+.btn:active { transform: translateY(2px); box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.25), inset -3px -3px 0 var(--accent-dark); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.ghost {
+  background: transparent;
+  color: var(--gold);
+  box-shadow: inset 0 0 0 3px var(--line);
+}
+.btn.ghost:active { transform: translateY(2px); }
+.btn.danger { color: #ffb3ab; box-shadow: inset 0 0 0 3px var(--accent-dark); }
+.btn:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+input {
+  font: 16px "VT323", monospace;
+  padding: 10px 12px;
+  border: 3px solid var(--line);
+  border-radius: 0;
+  background: var(--bg-deep);
+  color: var(--fg);
+  width: 100%;
+}
+input::placeholder { color: var(--muted); }
+
+/* ---------- Logo / brand ---------- */
+.emblem { flex: none; }
+.brand-row { display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; margin-bottom: 4px; }
+.brand h1 { font-size: 20px; }
+
+/* ---------- Halaman pemain (HP) ---------- */
+body.player { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 32px max(16px, env(safe-area-inset-left)); max-width: 520px; margin: 0 auto; }
+
+.screen label { display: block; margin-top: 12px; font-family: "Press Start 2P", monospace; font-size: 11px; color: var(--gold); }
+.screen label input { margin-top: 6px; font-family: "VT323", monospace; font-size: 18px; }
+.screen form .btn { margin-top: 18px; width: 100%; }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.team { display: flex; align-items: center; gap: 8px; font-family: "Press Start 2P", monospace; font-size: 12px; min-width: 0; }
+.team span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 20px; height: 20px; flex: none; }
+.score { font-size: 14px; color: var(--muted); white-space: nowrap; font-family: "Press Start 2P", monospace; }
+.score b { font-size: 16px; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+.round-title { font-family: "Press Start 2P", monospace; font-size: 13px; }
+.timer { font-variant-numeric: tabular-nums; font-family: "Press Start 2P", monospace; color: var(--accent); font-size: 13px; }
+.prompt { margin: 10px 0 0; font-size: 19px; }
+
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.slot {
+  border: 3px dashed var(--line);
+  border-radius: 0;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 64px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+}
+.slot .pc { width: 32px; height: 32px; }
+.slot.filled { border: 3px solid var(--good); background: rgba(111, 211, 138, 0.12); color: var(--fg); font-weight: 700; }
+
+.carry { display: flex; align-items: center; gap: 6px; }
+.pc-inline { width: 20px; height: 20px; vertical-align: middle; }
+
+.stick-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.dpad {
+  display: grid;
+  grid-template-columns: 62px 62px 62px;
+  grid-template-rows: 62px 62px 62px;
+  gap: 6px;
+  justify-content: center;
+}
+.dpad-btn {
+  font-size: 22px;
+  font-family: "Press Start 2P", monospace;
+  border: none;
+  background: var(--card);
+  color: var(--gold);
+  box-shadow:
+    inset 2px 2px 0 var(--card-hi),
+    inset -3px -3px 0 var(--card-edge),
+    0 3px 0 var(--bg-deep);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dpad-btn:active, .dpad-btn.pressed {
+  transform: translateY(2px);
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.3), inset -2px -2px 0 var(--card-edge);
+}
+.dpad-up { grid-column: 2; grid-row: 1; }
+.dpad-left { grid-column: 1; grid-row: 2; }
+.dpad-down { grid-column: 2; grid-row: 3; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+
+/* ---------- Tombol ambil barang ---------- */
+.pickup-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.btn.pickup {
+  width: 100%;
+  font-size: 14px;
+  background: var(--good);
+  color: #0a2317;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.4),
+    inset -3px -3px 0 #2f8f54,
+    0 3px 0 var(--bg-deep);
+}
+.btn.pickup:disabled {
+  background: var(--card);
+  color: var(--muted);
+  opacity: 1;
+  box-shadow: inset 0 0 0 3px var(--line);
+}
+
+.options { display: grid; gap: 8px; }
+.options .btn { width: 100%; text-align: left; background: var(--card); color: var(--fg); box-shadow: inset 0 0 0 3px var(--line); font-family: "VT323", monospace; font-size: 17px; padding: 10px 14px; }
+.options .btn.picked { background: var(--accent-soft); box-shadow: inset 0 0 0 3px var(--accent); }
+.options .btn:disabled { opacity: 1; }
+
+.ranking { margin: 0; padding-left: 4px; list-style: none; }
+.ranking li { padding: 4px 0; display: flex; align-items: center; gap: 2px; font-size: 16px; }
+.ranking li.me { color: var(--gold); font-weight: 700; }
+.ranking-dot { width: 20px; height: 20px; margin-right: 6px; flex: none; }
+
+/* ---------- Layar proyektor ---------- */
+body.display { background: var(--bg); min-height: 100vh; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+}
+
+.map-wrap { min-width: 0; position: relative; }
+#map {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 4px solid var(--card-edge);
+  box-shadow: inset 2px 2px 0 var(--card-hi), 0 4px 0 var(--bg-deep);
+  border-radius: 0;
+  background: #1c4f7a;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Label teks di atas peta: DOM, bukan canvas, biar tajam saat di-scale. */
+.map-labels { position: absolute; inset: 0; pointer-events: none; }
+.map-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-family: "Press Start 2P", monospace;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  pointer-events: none;
+}
+.map-label-team {
+  font-size: 11px;
+  color: var(--tc, #fff);
+  padding: 2px 6px;
+  background: rgba(10, 20, 26, 0.55);
+  border: 2px solid var(--tc, #fff);
+}
+.map-label-base {
+  font-size: 10px;
+  color: #fff;
+  padding: 3px 6px;
+  background: rgba(6, 14, 18, 0.78);
+  border: 2px solid var(--tc, #fff);
+}
+.map-label-zone {
+  font-size: 11px;
+  color: #fff3d6;
+  padding: 3px 8px;
+  background: rgba(6, 14, 18, 0.82);
+  border: 2px solid var(--tc, #ffe9a8);
+}
+
+.side { min-width: 0; }
+.side .card { margin-top: 0; margin-bottom: 12px; }
+.side h2 { color: #fff; font-size: 14px; }
+.side .timer { color: var(--gold); font-size: 18px; }
+.side .prompt { color: #fff; font-size: 19px; }
+.urls a { color: var(--gold); word-break: break-all; }
+.urls { margin: 0; padding-left: 18px; }
+.stage-line { font-size: 15px; color: var(--muted); margin: 6px 0 0; }
+.opt-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 2px dotted var(--line); font-size: 16px; }
+.opt-row b { font-variant-numeric: tabular-nums; }
+.opt-row.win { color: var(--gold); font-weight: 800; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+}
