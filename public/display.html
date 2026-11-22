@@ -15,7 +15,6 @@
     <section class="map-wrap">
       <canvas id="map" width="1200" height="800" aria-label="Peta permainan"></canvas>
       <div id="map-labels" class="map-labels" aria-hidden="true"></div>
-      <!-- Popup besar untuk reveal jawaban ronde 2 & 3 -->
       <div id="reveal-popup" class="reveal-popup" hidden>
         <div class="reveal-inner">
           <p class="reveal-small">Jawaban Benar</p>
@@ -23,7 +22,6 @@
           <p id="reveal-sub" class="reveal-sub"></p>
         </div>
       </div>
-      <!-- Overlay Pasal selama menjawab: sembunyikan posisi tim -->
       <div id="pasal-overlay" class="pasal-overlay" hidden>
         <div class="pasal-overlay-inner">
           <p class="label">Soal</p>
@@ -33,7 +31,6 @@
           <div id="pasal-lock-counter" class="lock-counter"></div>
         </div>
       </div>
-      <!-- Winner screen saat permainan selesai -->
       <div id="winner-screen" class="winner-screen" hidden>
         <div class="winner-inner">
           <p class="reveal-small">Juara Jejak Wawasan Nusantara</p>
@@ -44,31 +41,13 @@
     </section>
 
     <aside class="side">
-      <div class="card">
-        <div class="brand-row">
-          <img id="logo-emblem" class="emblem pixel-img" alt="" width="40" height="40">
-          <div>
-            <p id="phase-label" class="label">Menunggu</p>
-            <h2 id="round-title">Jejak Wawasan Nusantara</h2>
-          </div>
-        </div>
-        <p id="timer" class="timer"></p>
-        <p id="prompt" class="prompt"></p>
-        <div id="stage-extra"></div>
-      </div>
-
+      <!-- FOKUS: Papan Skor (prioritas utama) -->
       <div class="card">
         <p class="label">Papan skor</p>
         <ol id="ranking" class="ranking"></ol>
       </div>
 
-      <div class="card">
-        <p class="label">Buka di HP (satu WiFi dengan laptop ini)</p>
-        <ul id="urls" class="urls"></ul>
-        <p id="team-count" class="muted small"></p>
-        <p class="muted small">Putar HP ke landscape saat bermain.</p>
-      </div>
-
+      <!-- FOKUS: Kontrol host (prioritas utama) -->
       <div class="card" id="host">
         <p class="label">Kontrol host</p>
         <div id="host-login" class="row">
@@ -84,6 +63,29 @@
       </div>
     </aside>
   </main>
+
+  <!-- Bagian bawah (scroll ke bawah untuk lihat info ronde & URL HP) -->
+  <section class="below-fold">
+    <div class="card">
+      <div class="brand-row">
+        <img id="logo-emblem" class="emblem pixel-img" alt="" width="40" height="40">
+        <div>
+          <p id="phase-label" class="label">Menunggu</p>
+          <h2 id="round-title">Jejak Wawasan Nusantara</h2>
+        </div>
+      </div>
+      <p id="timer" class="timer"></p>
+      <p id="prompt" class="prompt"></p>
+      <div id="stage-extra"></div>
+    </div>
+
+    <div class="card">
+      <p class="label">Buka di HP (satu WiFi dengan laptop ini)</p>
+      <ul id="urls" class="urls"></ul>
+      <p id="team-count" class="muted small"></p>
+      <p class="muted small">Putar HP ke landscape saat bermain.</p>
+    </div>
+  </section>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="pixelart.js"></script>

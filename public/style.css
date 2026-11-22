@@ -366,9 +366,9 @@ body.in-game .controls { display: flex; }
     padding: 8px 10px;
   }
 
-  /* Papan rakit kecil di tengah landscape */
-  #board-card {
-    display: block !important;
+  /* Papan rakit kecil di tengah landscape - hanya tampil kalau tidak hidden */
+  #board-card:not([hidden]) {
+    display: block;
     position: fixed;
     top: 36px;
     left: 50%;
@@ -382,7 +382,7 @@ body.in-game .controls { display: flex; }
     background: rgba(22, 60, 79, 0.95);
     opacity: 0.7;
   }
-  #board-card:hover { opacity: 1; }
+  #board-card:not([hidden]):hover { opacity: 1; }
   #board-card .board { grid-template-columns: repeat(9, 1fr); gap: 3px; }
   #board-card .slot { min-height: 30px; padding: 2px; font-size: 8px; }
   #board-card .slot .pc { width: 18px; height: 18px; }
@@ -856,3 +856,15 @@ body.display { background: var(--bg); min-height: 100vh; }
   100% { transform: scale(1); }
 }
 .slot.filled { animation: slotPop 0.5s ease-out; }
+
+/* ---------- Below-fold section (info ronde & URL, scroll ke bawah) ---------- */
+.below-fold {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.below-fold .card { margin: 0; }
+body.display .layout { min-height: calc(100vh - 32px); }
