@@ -34,13 +34,11 @@
     return ((n >>> 0) % 1000) / 1000;
   }
 
-  // ---------- Primitif gambar ----------
   function rect(ctx, x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
   }
 
-  // Gambar kumpulan blok [dx,dy,w,h] relatif ke (ox,oy), dengan outline otomatis.
   function drawBlocks(ctx, ox, oy, blocks, color, outline, scale) {
     scale = scale || 1;
     if (outline) {
@@ -73,7 +71,7 @@
       for (var x = x0; x <= x1; x++) {
         var dx = x - cx, dy = y - cy;
         if (dx * dx + dy * dy > r * r) continue;
-        if (((x + y) & 1) !== 0) continue; // pola kotak-kotak 50% -> efek "dither" ala game lama
+        if (((x + y) & 1) !== 0) continue;
         ctx.fillRect(x, y, 1, 1);
       }
     }
@@ -89,31 +87,53 @@
     }
   }
 
-  // ---------- Ikon potongan lambang (9 jenis dari data.js) ----------
-  // Semua dalam koordinat lokal kecil (-7..7), scale diatur saat gambar.
   var ICONS = {
-    sila1: [[-1, -6, 2, 12], [-6, -1, 12, 2]], // Bintang
-    sila2: [ // Rantai: dua cincin berongga
-      [-6, -3, 5, 2], [-6, 1, 5, 2], [-6, -3, 2, 6], [-3, -3, 2, 6],
-      [1, -3, 5, 2], [1, 1, 5, 2], [1, -3, 2, 6], [4, -3, 2, 6],
+    sumatera: [
+      [-6, -5, 3, 2], [-5, -3, 3, 2], [-3, -1, 3, 2],
+      [-1, 1, 3, 2], [1, 3, 3, 2], [3, 5, 2, 2],
     ],
-    sila3: [ // Pohon beringin
-      [-1, 1, 2, 5], [-5, -6, 10, 3], [-4, -3, 8, 3], [-3, -1, 6, 2],
+    jawa: [
+      [-6, 0, 3, 2], [-3, -1, 4, 3], [1, 0, 4, 2], [5, 1, 2, 2],
     ],
-    sila4: [ // Kepala banteng
-      [-4, -3, 8, 2], [-3, -1, 6, 2], [-2, 1, 4, 2],
-      [-7, -6, 3, 3], [4, -6, 3, 3],
+    kalimantan: [
+      [-4, -4, 7, 2], [-5, -2, 10, 5], [-4, 3, 8, 2], [-2, 5, 4, 1],
     ],
-    sila5: [ // Padi dan kapas
-      [-3, 3, 2, 2], [-1, 1, 2, 2], [1, -1, 2, 2], [3, -3, 2, 2],
+    sulawesi: [
+      [-1, -5, 2, 11],
+      [-5, -5, 3, 2], [-5, -3, 2, 2],
+      [2, -5, 4, 2], [4, -3, 2, 2],
+      [-5, 3, 3, 2], [2, 3, 3, 2],
     ],
-    pita: [[-6, -2, 12, 4], [-8, -1, 2, 2], [6, -1, 2, 2]], // Pita
-    badan: [[-2, -6, 4, 2], [-4, -4, 8, 7], [-3, 3, 6, 2]], // Badan garuda
-    kepala: [[-4, -4, 7, 6], [3, -2, 3, 2]], // Kepala garuda
-    sayap: [[-1, -6, 2, 3], [1, -4, 2, 4], [3, -2, 2, 5], [5, 0, 2, 5]], // Sayap
+    papua: [
+      [-6, -1, 3, 2], [-5, 1, 2, 2],
+      [-3, -3, 9, 7],
+    ],
+    bendera: [
+      [-6, -6, 1, 12],
+      [-5, -5, 10, 3],
+    ],
+    pancasila: [
+      [-5, -4, 10, 3], [-4, -1, 8, 4], [-2, 3, 4, 2],
+      [-1, -3, 2, 3],
+    ],
+    uud: [
+      [-6, -3, 12, 6], [-1, -3, 2, 6],
+      [-5, -4, 4, 1], [1, -4, 4, 1],
+    ],
+    garuda: [
+      [-1, -3, 2, 6],
+      [-6, -2, 4, 2], [-5, 0, 3, 1],
+      [2, -2, 4, 2], [2, 0, 3, 1],
+      [-1, -5, 2, 2],
+    ],
   };
   var ICON_ACCENT = {
-    sila5: [[-5, -5, 2, 2], [-3, -6, 2, 2], [-6, -3, 2, 2]], // kapas putih
+    bendera: [[-5, -2, 10, 3]],
+    pancasila: [[-1, -3, 2, 3]],
+  };
+  var ICON_ACCENT_COLOR = {
+    bendera: "#fbf6ea",
+    pancasila: "#fff4d6",
   };
 
   function drawPieceIcon(ctx, x, y, typeId, color, scale, outline) {
@@ -122,7 +142,10 @@
     var blocks = ICONS[typeId] || [[-5, -5, 10, 10]];
     drawBlocks(ctx, x, y, blocks, color, outline, scale);
     var accent = ICON_ACCENT[typeId];
-    if (accent) drawBlocks(ctx, x, y, accent, "#fbf6ea", outline, scale);
+    if (accent) {
+      var acol = ICON_ACCENT_COLOR[typeId] || "#fbf6ea";
+      drawBlocks(ctx, x, y, accent, acol, null, scale);
+    }
   }
 
   function iconCanvas(typeId, color, size, outline) {
@@ -133,40 +156,31 @@
     drawPieceIcon(ctx, size / 2, size / 2, typeId, color, scale, outline);
     return c;
   }
-  function iconDataURL(typeId, color, size, outline) {
-    return iconCanvas(typeId, color, size, outline).toDataURL("image/png");
-  }
+  function iconDataURL(typeId, color, size, outline) { return iconCanvas(typeId, color, size, outline).toDataURL("image/png"); }
 
-  // ---------- Karakter pemain ----------
   function drawCharacter(ctx, x, y, color, tms, moving, scale) {
     scale = scale || 1;
     var bob = moving ? (Math.sin(tms / 90) > 0 ? 1 : 0) : 0;
-    var skin = "#f1c27d", skinSh = "#c98f55", hair = "#2b1b12", shoe = "#241f1c";
+    var skin = "#f1c27d", hair = "#2b1b12", shoe = "#241f1c";
     var shirtSh = shade(color, -0.3);
     var legL = moving && Math.sin(tms / 90) > 0 ? 1 : 0;
     var legR = moving && Math.sin(tms / 90) <= 0 ? 1 : 0;
     var blocks = [
-      // kaki (bergerak selang-seling saat jalan)
       [-3, 3 + legL, 2, 3],
       [1, 3 + legR, 2, 3],
     ];
     drawBlocks(ctx, x, y - bob, blocks, shoe, "#1a1410", scale);
     var body = [
-      [-4, -1, 2, 4], // lengan kiri
-      [2, -1, 2, 4], // lengan kanan
-      [-3, -2, 6, 5], // baju (warna tim)
+      [-4, -1, 2, 4],
+      [2, -1, 2, 4],
+      [-3, -2, 6, 5],
     ];
     drawBlocks(ctx, x, y - bob, body, color, "#1a1410", scale);
     drawBlocks(ctx, x, y - bob, [[-3, 2, 6, 1]], shirtSh, null, scale);
-    var head = [
-      [-3, -8, 6, 5], // kepala
-    ];
-    drawBlocks(ctx, x, y - bob, head, skin, "#1a1410", scale);
+    drawBlocks(ctx, x, y - bob, [[-3, -8, 6, 5]], skin, "#1a1410", scale);
     drawBlocks(ctx, x, y - bob, [[-3, -9, 6, 2]], hair, "#1a1410", scale);
-    // mata
     rect(ctx, x + (-2) * scale, y - bob + (-6) * scale, scale, scale, "#1a1410");
     rect(ctx, x + (1) * scale, y - bob + (-6) * scale, scale, scale, "#1a1410");
-    void skinSh;
   }
 
   function avatarCanvas(color, size) {
@@ -183,19 +197,17 @@
   }
   function avatarDataURL(color, size) { return avatarCanvas(color, size).toDataURL("image/png"); }
 
-  // ---------- Lambang kecil (logo Garuda sederhana untuk layar pembuka/judul) ----------
   function drawEmblem(ctx, x, y, scale) {
     scale = scale || 1;
     var gold = "#d69e2e", ink = "#1a1410";
-    var sayapR = ICONS.sayap;
+    var sayapR = [[-1, -6, 2, 3], [1, -4, 2, 4], [3, -2, 2, 5], [5, 0, 2, 5]];
     drawBlocks(ctx, x, y, sayapR, gold, ink, scale);
     var sayapL = sayapR.map(function (b) { return [-(b[0] + b[2]), b[1], b[2], b[3]]; });
     drawBlocks(ctx, x, y, sayapL, gold, ink, scale);
-    drawBlocks(ctx, x, y, ICONS.badan, gold, ink, scale);
-    drawBlocks(ctx, x, y - 7 * scale, ICONS.kepala, gold, ink, scale);
-    drawBlocks(ctx, x, y + 8 * scale, ICONS.pita, "#e53e3e", ink, scale);
-    var star = ICONS.sila1.map(function (b) { return [b[0] * 0.6, b[1] * 0.6, b[2] * 0.6, b[3] * 0.6]; });
-    drawBlocks(ctx, x, y + 1 * scale, star, "#fff4d6", null, scale);
+    drawBlocks(ctx, x, y, [[-2, -6, 4, 2], [-4, -4, 8, 7], [-3, 3, 6, 2]], gold, ink, scale);
+    drawBlocks(ctx, x, y - 7 * scale, [[-4, -4, 7, 6], [3, -2, 3, 2]], gold, ink, scale);
+    drawBlocks(ctx, x, y + 8 * scale, [[-6, -2, 12, 4], [-8, -1, 2, 2], [6, -1, 2, 2]], "#e53e3e", ink, scale);
+    drawBlocks(ctx, x, y + 1 * scale, [[-0.6, -3.6, 1.2, 7.2], [-3.6, -0.6, 7.2, 1.2]], "#fff4d6", null, scale);
   }
   function emblemCanvas(size) {
     var c = global.document.createElement("canvas");
@@ -207,7 +219,6 @@
   }
   function emblemDataURL(size) { return emblemCanvas(size).toDataURL("image/png"); }
 
-  // ---------- Bendera (untuk zona dan pangkalan tim) ----------
   function drawFlag(ctx, x, y, color, scale) {
     scale = scale || 1;
     drawBlocks(ctx, x, y, [[-1, -11, 1, 12]], "#79532c", "#1a1410", scale);
@@ -220,6 +231,11 @@
       drawBlocks(ctx, x, y, [[-1, 1, 2, 4]], "#5a3b22", "#1a1410", scale);
       drawBlocks(ctx, x, y, [[-4, -7, 8, 3], [-5, -5, 10, 3], [-4, -3, 8, 2]], "#2f7a3c", "#1a1410", scale);
       drawBlocks(ctx, x, y, [[-3, -7, 3, 2]], "#49a158", null, scale);
+    } else if (kind === "palm") {
+      drawBlocks(ctx, x, y, [[-1, 0, 2, 5]], "#8a5a2f", "#1a1410", scale);
+      drawBlocks(ctx, x, y, [[-5, -3, 3, 2], [-6, -1, 2, 2]], "#2f7a3c", "#1a1410", scale);
+      drawBlocks(ctx, x, y, [[2, -3, 3, 2], [4, -1, 2, 2]], "#2f7a3c", "#1a1410", scale);
+      drawBlocks(ctx, x, y, [[-2, -5, 4, 2]], "#49a158", "#1a1410", scale);
     } else if (kind === "rock") {
       drawBlocks(ctx, x, y, [[-3, -2, 6, 4], [-2, -3, 4, 1]], "#8a8f98", "#1a1410", scale);
       drawBlocks(ctx, x, y, [[-2, -1, 2, 1]], "#aeb3bb", null, scale);
@@ -230,13 +246,21 @@
       rect(ctx, x, y, scale, scale, "#ffe9a8");
       rect(ctx, x - scale, y, scale, scale, "#e4572e");
       rect(ctx, x + scale, y, scale, scale, "#e4572e");
+    } else if (kind === "flower2") {
+      rect(ctx, x, y, scale, scale, "#ffb3c1");
+      rect(ctx, x - scale, y, scale, scale, "#d53f8c");
+      rect(ctx, x + scale, y, scale, scale, "#d53f8c");
+      rect(ctx, x, y - scale, scale, scale, "#d53f8c");
+    } else if (kind === "pagoda") {
+      drawBlocks(ctx, x, y, [[-3, 0, 6, 2]], "#5a3b22", "#1a1410", scale);
+      drawBlocks(ctx, x, y, [[-4, -2, 8, 2]], "#8a2a12", "#1a1410", scale);
+      drawBlocks(ctx, x, y, [[-3, -4, 6, 2]], "#b53922", "#1a1410", scale);
+      drawBlocks(ctx, x, y, [[-1, -6, 2, 2]], "#d69e2e", "#1a1410", scale);
+    } else if (kind === "shell") {
+      drawBlocks(ctx, x, y, [[-2, -1, 4, 2], [-1, -2, 2, 1], [-1, 1, 2, 1]], "#f0c070", "#1a1410", scale);
     }
   }
 
-  // ---------- Obstacle (bagian peta yang tidak bisa dilewati) ----------
-  // Digambar sebagai tanah padas kasar (dither) + beberapa gumpalan batu di
-  // atasnya, supaya terbaca sebagai halangan sungguhan menyatu dengan peta,
-  // bukan sekadar lingkaran tempelan.
   function drawObstacle(ctx, x, y, r, seedN) {
     seedN = seedN || 0;
     var base = "#6b5a46", baseSh = "#4d4034", edge = "#2e2419";
@@ -263,11 +287,6 @@
     }
   }
 
-  // ---------- Peta latar (dibangun sekali lalu dicache jadi gambar) ----------
-  // Sekarang daratan jadi default (bukan laut), dan air cuma ada di dalam
-  // jalur sungai (rivers) yang dikirim server. Jembatan (bridges) jadi jalur
-  // kayu yang "membatalkan" status air di titik itu. mapDef pakai koordinat
-  // yang sama dengan canvas ini (sudah diskalakan ke resolusi rendah).
   function buildBackground(doc, W, H, mapDef) {
     mapDef = mapDef || {};
     var rivers = mapDef.rivers || [];
@@ -292,7 +311,6 @@
       }
       return false;
     }
-    // Jarak minimum ke tepi sungai terdekat (negatif = di dalam air).
     function riverGap(x, y) {
       var gap = Infinity;
       for (var i = 0; i < rivers.length; i++) {
@@ -303,7 +321,9 @@
       return gap;
     }
 
-    // cat: 0 daratan, 1 pasir tepi air, 2 air, 3 jembatan
+    var cx = W / 2, cy = H / 2;
+    function distCenter(x, y) { return Math.hypot(x - cx, y - cy) / Math.hypot(W / 2, H / 2); }
+
     var catMap = new Uint8Array(W * H);
     for (var y = 0; y < H; y++) {
       for (var x = 0; x < W; x++) {
@@ -314,27 +334,57 @@
         var col;
         if (cat === 3) {
           var hw = hash2(x, y, 31);
-          col = hw > 0.5 ? "#8a5a2f" : "#6e4420";
+          col = hw > 0.7 ? "#9a6a3a" : (hw > 0.4 ? "#7a4e26" : "#5e3818");
         } else if (cat === 2) {
           var wv = hash2(x, y, 11);
-          col = wv > 0.93 ? "#3f86ac" : (wv > 0.85 ? "#2c6690" : "#1d4870");
+          var sinewave = Math.sin(x * 0.4 + y * 0.3) * 0.5 + 0.5;
+          if (wv > 0.95) col = "#6fb6d9";
+          else if (wv > 0.88) col = "#4a98be";
+          else if (sinewave > 0.6) col = "#2f70a0";
+          else col = "#1d4870";
         } else if (cat === 1) {
           var hs = hash2(x, y, 23);
-          col = hs > 0.6 ? "#e9cf98" : (hs > 0.25 ? "#d9b878" : "#cfa968");
+          col = hs > 0.6 ? "#f0d9a0" : (hs > 0.25 ? "#e3c282" : "#cfa968");
         } else {
           var hg = hash2(x, y, 23);
-          col = hg > 0.88 ? "#6fbf62" : (hg > 0.6 ? "#5fae55" : (hg > 0.18 ? "#479a4a" : "#3f8a44"));
+          var dd = distCenter(x, y);
+          var patchNoise = hash2(Math.floor(x / 14), Math.floor(y / 14), 7);
+          if (patchNoise > 0.82) {
+            col = hg > 0.6 ? "#c9c05a" : (hg > 0.3 ? "#b0a84b" : "#9a953d");
+          } else if (patchNoise < 0.18 && dd > 0.3) {
+            col = hg > 0.6 ? "#2a6a30" : (hg > 0.2 ? "#245c2a" : "#1d4e23");
+          } else {
+            if (hg > 0.92) col = "#7fcf6f";
+            else if (hg > 0.62) col = "#5fae55";
+            else if (hg > 0.2) col = "#4a9a48";
+            else col = "#3f8a44";
+          }
         }
         ctx.fillStyle = col;
         ctx.fillRect(x, y, 1, 1);
       }
     }
 
-    // Sebar dekorasi kecil (pohon/batu/semak/bunga) di daratan saja, jarang-jarang.
+    for (var yy = 1; yy < H - 1; yy++) {
+      for (var xx = 1; xx < W - 1; xx++) {
+        var c = catMap[yy * W + xx];
+        if (c !== 0 && c !== 1) continue;
+        var isEdge = false;
+        if (catMap[yy * W + xx + 1] === 2) isEdge = true;
+        else if (catMap[yy * W + xx - 1] === 2) isEdge = true;
+        else if (catMap[(yy + 1) * W + xx] === 2) isEdge = true;
+        else if (catMap[(yy - 1) * W + xx] === 2) isEdge = true;
+        if (isEdge) {
+          ctx.fillStyle = "#4a3820";
+          ctx.fillRect(xx, yy, 1, 1);
+        }
+      }
+    }
+
     var placed = [];
     var tries = 0;
-    var target = 16 + Math.floor(rnd() * 10);
-    while (placed.length < target && tries < 900) {
+    var target = 24 + Math.floor(rnd() * 14);
+    while (placed.length < target && tries < 1400) {
       tries++;
       var px = Math.floor(rnd() * W);
       var py = Math.floor(rnd() * H);
@@ -342,34 +392,53 @@
       var ok = true;
       for (var i = 0; i < placed.length; i++) {
         var pd = Math.hypot(placed[i][0] - px, placed[i][1] - py);
-        if (pd < 14) { ok = false; break; }
+        if (pd < 12) { ok = false; break; }
       }
       if (!ok) continue;
       var r2 = rnd();
-      var kind = r2 > 0.78 ? "rock" : (r2 > 0.52 ? "bush" : (r2 > 0.22 ? "tree" : "flower"));
+      var kind;
+      if (r2 > 0.85) kind = "palm";
+      else if (r2 > 0.72) kind = "tree";
+      else if (r2 > 0.58) kind = "bush";
+      else if (r2 > 0.42) kind = "flower";
+      else if (r2 > 0.30) kind = "flower2";
+      else if (r2 > 0.18) kind = "rock";
+      else if (r2 > 0.10) kind = "pagoda";
+      else kind = "shell";
       drawDecor(ctx, px, py, kind, 1);
       placed.push([px, py]);
+    }
+
+    if (rivers.length > 0) {
+      for (var ri = 0; ri < rivers.length; ri++) {
+        var r = rivers[ri];
+        var midX = (r.x1 + r.x2) / 2;
+        var midY = (r.y1 + r.y2) / 2;
+        var isleX = Math.floor(midX + (rnd() - 0.5) * 20);
+        var isleY = Math.floor(midY + (rnd() - 0.5) * 10);
+        for (var oy = -2; oy <= 2; oy++) {
+          for (var ox = -2; ox <= 2; ox++) {
+            if (ox * ox + oy * oy > 4) continue;
+            var ix = isleX + ox, iy = isleY + oy;
+            if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue;
+            if (catMap[iy * W + ix] !== 2) continue;
+            ctx.fillStyle = (ox + oy) & 1 ? "#e3c282" : "#f0d9a0";
+            ctx.fillRect(ix, iy, 1, 1);
+            catMap[iy * W + ix] = 1;
+          }
+        }
+      }
     }
 
     return canvas;
   }
 
   global.PixelArt = {
-    shade: shade,
-    makeRng: makeRng,
-    rect: rect,
-    drawBlocks: drawBlocks,
-    ditherCircle: ditherCircle,
-    dashedRing: dashedRing,
-    drawPieceIcon: drawPieceIcon,
-    iconDataURL: iconDataURL,
-    drawCharacter: drawCharacter,
-    avatarDataURL: avatarDataURL,
-    drawFlag: drawFlag,
-    drawDecor: drawDecor,
-    drawObstacle: drawObstacle,
-    buildBackground: buildBackground,
-    drawEmblem: drawEmblem,
-    emblemDataURL: emblemDataURL,
+    shade: shade, makeRng: makeRng, rect: rect, drawBlocks: drawBlocks,
+    ditherCircle: ditherCircle, dashedRing: dashedRing,
+    drawPieceIcon: drawPieceIcon, iconDataURL: iconDataURL,
+    drawCharacter: drawCharacter, avatarDataURL: avatarDataURL,
+    drawFlag: drawFlag, drawDecor: drawDecor, drawObstacle: drawObstacle,
+    buildBackground: buildBackground, drawEmblem: drawEmblem, emblemDataURL: emblemDataURL,
   };
 })(typeof window !== "undefined" ? window : globalThis);

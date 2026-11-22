@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Jejak Identitas Nusantara - Layar</title>
+  <title>Jejak Wawasan Nusantara - Layar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -15,6 +15,32 @@
     <section class="map-wrap">
       <canvas id="map" width="1200" height="800" aria-label="Peta permainan"></canvas>
       <div id="map-labels" class="map-labels" aria-hidden="true"></div>
+      <!-- Popup besar untuk reveal jawaban ronde 2 & 3 -->
+      <div id="reveal-popup" class="reveal-popup" hidden>
+        <div class="reveal-inner">
+          <p class="reveal-small">Jawaban Benar</p>
+          <h2 id="reveal-title"></h2>
+          <p id="reveal-sub" class="reveal-sub"></p>
+        </div>
+      </div>
+      <!-- Overlay Pasal selama menjawab: sembunyikan posisi tim -->
+      <div id="pasal-overlay" class="pasal-overlay" hidden>
+        <div class="pasal-overlay-inner">
+          <p class="label">Soal</p>
+          <h2 id="pasal-overlay-q"></h2>
+          <p id="pasal-overlay-timer" class="pasal-overlay-timer"></p>
+          <p class="muted">Tim menjawab di HP masing-masing.<br>Posisi disembunyikan sampai semua tim mengunci jawaban.</p>
+          <div id="pasal-lock-counter" class="lock-counter"></div>
+        </div>
+      </div>
+      <!-- Winner screen saat permainan selesai -->
+      <div id="winner-screen" class="winner-screen" hidden>
+        <div class="winner-inner">
+          <p class="reveal-small">Juara Jejak Wawasan Nusantara</p>
+          <div id="winner-podium" class="winner-podium"></div>
+          <p id="winner-note" class="muted">Tekan Reset untuk memulai permainan baru.</p>
+        </div>
+      </div>
     </section>
 
     <aside class="side">
@@ -23,7 +49,7 @@
           <img id="logo-emblem" class="emblem pixel-img" alt="" width="40" height="40">
           <div>
             <p id="phase-label" class="label">Menunggu</p>
-            <h2 id="round-title">Jejak Identitas Nusantara</h2>
+            <h2 id="round-title">Jejak Wawasan Nusantara</h2>
           </div>
         </div>
         <p id="timer" class="timer"></p>
@@ -40,6 +66,7 @@
         <p class="label">Buka di HP (satu WiFi dengan laptop ini)</p>
         <ul id="urls" class="urls"></ul>
         <p id="team-count" class="muted small"></p>
+        <p class="muted small">Putar HP ke landscape saat bermain.</p>
       </div>
 
       <div class="card" id="host">

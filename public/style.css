@@ -19,6 +19,8 @@
   --accent-soft: #3a2b2a;
   --gold: #ffcf5c;
   --good: #6fd38a;
+  --lock: #ffd54d;
+  --lock-dark: #8c7418;
   color-scheme: dark;
 }
 
@@ -58,7 +60,6 @@ h2 { font-size: 15px; }
 .status { margin: 8px 0 0; color: var(--muted); font-size: 16px; min-height: 1.4em; }
 .error { color: var(--accent); font-size: 15px; min-height: 1.4em; margin: 8px 0 0; }
 
-/* ---------- Kartu bergaya "panel" piksel ---------- */
 .card {
   background: var(--card);
   border: 3px solid var(--card-edge);
@@ -73,7 +74,6 @@ h2 { font-size: 15px; }
 
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-/* ---------- Tombol bergaya tombol konsol 8-bit ---------- */
 .btn {
   font: 13px "Press Start 2P", monospace;
   padding: 12px 16px;
@@ -110,13 +110,12 @@ input {
 }
 input::placeholder { color: var(--muted); }
 
-/* ---------- Logo / brand ---------- */
 .emblem { flex: none; }
 .brand-row { display: flex; align-items: center; gap: 12px; }
 .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; margin-bottom: 4px; }
 .brand h1 { font-size: 20px; }
 
-/* ---------- Halaman pemain (HP) ---------- */
+/* ---------- Halaman pemain (HP) - PORTRAIT ---------- */
 body.player { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 32px max(16px, env(safe-area-inset-left)); max-width: 520px; margin: 0 auto; }
 
 .screen label { display: block; margin-top: 12px; font-family: "Press Start 2P", monospace; font-size: 11px; color: var(--gold); }
@@ -150,6 +149,16 @@ body.player { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-ar
 
 .carry { display: flex; align-items: center; gap: 6px; }
 .pc-inline { width: 20px; height: 20px; vertical-align: middle; }
+
+/* ---------- Kontrol (gabungan analog + tombol aksi) ---------- */
+.controls {
+  display: none;
+  margin-top: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+body.in-game .controls { display: flex; }
 
 .stick-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
@@ -188,11 +197,14 @@ body.player { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-ar
 .dpad-down { grid-column: 2; grid-row: 3; }
 .dpad-right { grid-column: 3; grid-row: 2; }
 
-/* ---------- Tombol ambil barang ---------- */
-.pickup-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.btn.pickup {
+.action-area { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 140px; }
+.action-stack { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.btn.pickup, .btn.drop, .btn.lock, .btn.cancel {
   width: 100%;
   font-size: 14px;
+  min-height: 56px;
+}
+.btn.pickup {
   background: var(--good);
   color: #0a2317;
   box-shadow:
@@ -206,16 +218,179 @@ body.player { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-ar
   opacity: 1;
   box-shadow: inset 0 0 0 3px var(--line);
 }
+.btn.lock {
+  background: var(--lock);
+  color: #2a1f07;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.4),
+    inset -3px -3px 0 var(--lock-dark),
+    0 3px 0 var(--bg-deep);
+}
+.btn.lock.locked { background: var(--good); color: #0a2317; box-shadow: inset 0 0 0 3px #2f8f54; }
+.btn.lock:disabled { background: var(--card); color: var(--muted); opacity: 1; box-shadow: inset 0 0 0 3px var(--line); }
+.btn.drop, .btn.cancel { font-size: 13px; }
+
+/* ---------- Mini map di HP pemain ---------- */
+.map-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.player-map-wrap {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+}
+#player-map {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 3px solid var(--card-edge);
+  box-shadow: inset 2px 2px 0 var(--card-hi), 0 3px 0 var(--bg-deep);
+  background: #1c4f7a;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+.pmap-labels { position: absolute; inset: 0; pointer-events: none; }
+.pmap-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  padding: 2px 4px;
+  background: rgba(10, 20, 26, 0.75);
+  border: 1px solid currentColor;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 0.02em;
+}
+.pmap-card-chip {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 20, 26, 0.85);
+  color: var(--gold);
+  padding: 3px 8px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  border: 1px solid var(--gold);
+  white-space: nowrap;
+  max-width: 94%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pmap-question {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  background: rgba(10, 20, 26, 0.85);
+  color: var(--fg);
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  line-height: 1.2;
+}
 
 .options { display: grid; gap: 8px; }
 .options .btn { width: 100%; text-align: left; background: var(--card); color: var(--fg); box-shadow: inset 0 0 0 3px var(--line); font-family: "VT323", monospace; font-size: 17px; padding: 10px 14px; }
-.options .btn.picked { background: var(--accent-soft); box-shadow: inset 0 0 0 3px var(--accent); }
-.options .btn:disabled { opacity: 1; }
 
 .ranking { margin: 0; padding-left: 4px; list-style: none; }
 .ranking li { padding: 4px 0; display: flex; align-items: center; gap: 2px; font-size: 16px; }
 .ranking li.me { color: var(--gold); font-weight: 700; }
 .ranking-dot { width: 20px; height: 20px; margin-right: 6px; flex: none; }
+
+/* ---------- Landscape HUD (hanya muncul di landscape) ---------- */
+.landscape-hud { display: none; }
+
+/* ---------- Mode LANDSCAPE untuk HP ---------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  body.player {
+    max-width: 100%;
+    padding: 6px 10px;
+    min-height: 100vh;
+  }
+  /* Sembunyikan elemen portrait-only saat landscape */
+  body.player.in-game .portrait-only { display: none !important; }
+  body.player.in-game #game { display: flex; flex-direction: column; height: calc(100vh - 12px); }
+
+  .landscape-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-family: "Press Start 2P", monospace;
+    font-size: 9px;
+    padding: 4px 8px;
+    background: var(--card);
+    border: 2px solid var(--card-edge);
+    margin-bottom: 4px;
+  }
+  .lhud-team { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .lhud-team span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lhud-mid { display: flex; flex-direction: column; gap: 2px; text-align: center; min-width: 0; }
+  .lhud-round { font-size: 9px; color: var(--gold); }
+  .lhud-timer { font-size: 9px; color: var(--accent); }
+  .lhud-score { font-size: 9px; color: var(--muted); }
+  .lhud-score b { color: var(--gold); font-size: 10px; margin-left: 4px; }
+
+  /* Map card (ronde 2 & 3) ambil hampir seluruh tinggi */
+  #map-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    margin-top: 0;
+    min-height: 0;
+  }
+  #map-card .map-head, #map-card #map-prompt, #map-card #map-status { display: none; }
+  .player-map-wrap { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  #player-map { max-height: 100%; width: auto; height: 100%; }
+
+  /* Controls: analog kiri, tombol kanan (seperti gameboy landscape) */
+  .controls {
+    display: flex !important;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 0 12px 12px;
+    pointer-events: none;
+  }
+  .stick-area { pointer-events: auto; }
+  .action-area { pointer-events: auto; }
+  .dpad {
+    grid-template-columns: 52px 52px 52px;
+    grid-template-rows: 52px 52px 52px;
+    gap: 4px;
+  }
+  .action-area { min-width: 130px; }
+  .btn.pickup, .btn.drop, .btn.lock, .btn.cancel {
+    min-height: 50px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  /* Papan rakit kecil di tengah landscape */
+  #board-card {
+    display: block !important;
+    position: fixed;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(60%, 420px);
+    max-height: 60vh;
+    overflow: auto;
+    padding: 6px 10px;
+    font-size: 10px;
+    z-index: 5;
+    background: rgba(22, 60, 79, 0.95);
+    opacity: 0.7;
+  }
+  #board-card:hover { opacity: 1; }
+  #board-card .board { grid-template-columns: repeat(9, 1fr); gap: 3px; }
+  #board-card .slot { min-height: 30px; padding: 2px; font-size: 8px; }
+  #board-card .slot .pc { width: 18px; height: 18px; }
+  #board-card .slot span { display: none; }
+  #board-card .slot.filled { border-width: 2px; }
+  #board-card .label { font-size: 8px; margin-bottom: 4px; }
+  #board-card .status { font-size: 10px; }
+}
 
 /* ---------- Layar proyektor ---------- */
 body.display { background: var(--bg); min-height: 100vh; }
@@ -242,7 +417,6 @@ body.display { background: var(--bg); min-height: 100vh; }
   image-rendering: crisp-edges;
 }
 
-/* Label teks di atas peta: DOM, bukan canvas, biar tajam saat di-scale. */
 .map-labels { position: absolute; inset: 0; pointer-events: none; }
 .map-label {
   position: absolute;
@@ -258,7 +432,9 @@ body.display { background: var(--bg); min-height: 100vh; }
   padding: 2px 6px;
   background: rgba(10, 20, 26, 0.55);
   border: 2px solid var(--tc, #fff);
+  transition: background 0.2s;
 }
+.map-label-team.locked { background: rgba(255, 213, 77, 0.3); }
 .map-label-base {
   font-size: 10px;
   color: #fff;
@@ -267,11 +443,72 @@ body.display { background: var(--bg); min-height: 100vh; }
   border: 2px solid var(--tc, #fff);
 }
 .map-label-zone {
-  font-size: 11px;
+  font-size: 13px;
   color: #fff3d6;
-  padding: 3px 8px;
-  background: rgba(6, 14, 18, 0.82);
+  padding: 4px 10px;
+  background: rgba(6, 14, 18, 0.88);
   border: 2px solid var(--tc, #ffe9a8);
+}
+
+/* ---------- Overlay Pasal (menutup map selama menjawab) ---------- */
+.pasal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 31, 43, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 3;
+  border: 4px solid var(--card-edge);
+  animation: fadeIn 0.3s;
+}
+.pasal-overlay-inner { text-align: center; max-width: 80%; }
+.pasal-overlay-inner h2 { font-size: 22px; margin: 12px 0 18px; color: var(--gold); line-height: 1.4; text-shadow: 3px 3px 0 var(--bg-deep); }
+.pasal-overlay-timer { font-size: 18px; color: var(--accent); margin: 8px 0 20px; font-family: "Press Start 2P", monospace; }
+.lock-counter { margin-top: 24px; font-size: 20px; color: var(--good); font-family: "Press Start 2P", monospace; }
+
+/* ---------- Popup reveal besar ---------- */
+.reveal-popup {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  background: rgba(10, 31, 43, 0.85);
+  animation: revealPop 0.4s;
+}
+.reveal-inner {
+  background: var(--gold);
+  color: #2a1f07;
+  padding: 28px 48px;
+  border: 6px solid var(--lock-dark);
+  box-shadow:
+    inset 3px 3px 0 rgba(255, 255, 255, 0.5),
+    inset -4px -4px 0 var(--lock-dark),
+    0 6px 0 var(--bg-deep);
+  text-align: center;
+  max-width: 80%;
+}
+.reveal-small { margin: 0; font-family: "Press Start 2P", monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.reveal-inner h2 {
+  font-size: 40px;
+  color: #1a1410;
+  margin: 10px 0;
+  text-shadow: 3px 3px 0 rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.04em;
+}
+.reveal-sub { margin: 4px 0 0; font-size: 16px; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes revealPop {
+  0% { opacity: 0; transform: scale(0.92); }
+  60% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .side { min-width: 0; }
@@ -282,6 +519,7 @@ body.display { background: var(--bg); min-height: 100vh; }
 .urls a { color: var(--gold); word-break: break-all; }
 .urls { margin: 0; padding-left: 18px; }
 .stage-line { font-size: 15px; color: var(--muted); margin: 6px 0 0; }
+.stage-line.win { color: var(--gold); font-weight: 700; font-size: 17px; }
 .opt-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 2px dotted var(--line); font-size: 16px; }
 .opt-row b { font-variant-numeric: tabular-nums; }
 .opt-row.win { color: var(--gold); font-weight: 800; }
@@ -289,3 +527,332 @@ body.display { background: var(--bg); min-height: 100vh; }
 @media (max-width: 860px) {
   .layout { grid-template-columns: 1fr; }
 }
+
+/* ---------- Mode LANDSCAPE untuk HP ---------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  body.player {
+    max-width: 100%;
+    padding: 6px 10px;
+    min-height: 100vh;
+  }
+  body.player.in-game .portrait-only { display: none !important; }
+  body.player.in-game #game { display: flex; flex-direction: column; height: calc(100vh - 12px); }
+
+  .landscape-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-family: "Press Start 2P", monospace;
+    font-size: 9px;
+    padding: 4px 8px;
+    background: var(--card);
+    border: 2px solid var(--card-edge);
+    margin-bottom: 4px;
+  }
+  .lhud-team { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .lhud-team span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lhud-mid { display: flex; flex-direction: column; gap: 2px; text-align: center; min-width: 0; }
+  .lhud-round { font-size: 9px; color: var(--gold); }
+  .lhud-timer { font-size: 9px; color: var(--accent); }
+  .lhud-score { font-size: 9px; color: var(--muted); }
+  .lhud-score b { color: var(--gold); font-size: 10px; margin-left: 4px; }
+
+  #map-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    margin-top: 0;
+    min-height: 0;
+  }
+  #map-card .map-head, #map-card #map-prompt, #map-card #map-status { display: none; }
+  .player-map-wrap { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  #player-map { max-height: 100%; width: auto; height: 100%; }
+
+  .controls {
+    display: flex !important;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 0 12px 12px;
+    pointer-events: none;
+  }
+  .stick-area { pointer-events: auto; }
+  .action-area { pointer-events: auto; }
+  .dpad {
+    grid-template-columns: 52px 52px 52px;
+    grid-template-rows: 52px 52px 52px;
+    gap: 4px;
+  }
+  .action-area { min-width: 130px; }
+  .btn.pickup, .btn.drop, .btn.lock, .btn.cancel {
+    min-height: 50px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  #board-card {
+    display: block !important;
+    position: fixed;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(60%, 420px);
+    max-height: 60vh;
+    overflow: auto;
+    padding: 6px 10px;
+    font-size: 10px;
+    z-index: 5;
+    background: rgba(22, 60, 79, 0.95);
+    opacity: 0.7;
+  }
+  #board-card:hover { opacity: 1; }
+  #board-card .board { grid-template-columns: repeat(9, 1fr); gap: 3px; }
+  #board-card .slot { min-height: 30px; padding: 2px; font-size: 8px; }
+  #board-card .slot .pc { width: 18px; height: 18px; }
+  #board-card .slot span { display: none; }
+  #board-card .slot.filled { border-width: 2px; }
+  #board-card .label { font-size: 8px; margin-bottom: 4px; }
+  #board-card .status { font-size: 10px; }
+}
+
+/* ---------- Layar proyektor ---------- */
+body.display { background: var(--bg); min-height: 100vh; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+}
+
+.map-wrap { min-width: 0; position: relative; }
+#map {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 4px solid var(--card-edge);
+  box-shadow: inset 2px 2px 0 var(--card-hi), 0 4px 0 var(--bg-deep);
+  border-radius: 0;
+  background: #1c4f7a;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.map-labels { position: absolute; inset: 0; pointer-events: none; }
+.map-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-family: "Press Start 2P", monospace;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  pointer-events: none;
+}
+.map-label-team {
+  font-size: 11px;
+  color: var(--tc, #fff);
+  padding: 2px 6px;
+  background: rgba(10, 20, 26, 0.55);
+  border: 2px solid var(--tc, #fff);
+  transition: background 0.2s;
+}
+.map-label-team.locked { background: rgba(255, 213, 77, 0.3); }
+.map-label-base {
+  font-size: 10px;
+  color: #fff;
+  padding: 3px 6px;
+  background: rgba(6, 14, 18, 0.78);
+  border: 2px solid var(--tc, #fff);
+}
+.map-label-zone {
+  font-size: 13px;
+  color: #fff3d6;
+  padding: 4px 10px;
+  background: rgba(6, 14, 18, 0.88);
+  border: 2px solid var(--tc, #ffe9a8);
+}
+
+/* ---------- Overlay Pasal ---------- */
+.pasal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 31, 43, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 3;
+  border: 4px solid var(--card-edge);
+  animation: fadeIn 0.3s;
+}
+.pasal-overlay-inner { text-align: center; max-width: 80%; }
+.pasal-overlay-inner h2 { font-size: 22px; margin: 12px 0 18px; color: var(--gold); line-height: 1.4; text-shadow: 3px 3px 0 var(--bg-deep); }
+.pasal-overlay-timer { font-size: 18px; color: var(--accent); margin: 8px 0 20px; font-family: "Press Start 2P", monospace; }
+.lock-counter { margin-top: 24px; font-size: 20px; color: var(--good); font-family: "Press Start 2P", monospace; }
+
+/* ---------- Popup reveal besar ---------- */
+.reveal-popup {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  background: rgba(10, 31, 43, 0.85);
+  animation: revealPop 0.4s;
+}
+.reveal-inner {
+  background: var(--gold);
+  color: #2a1f07;
+  padding: 28px 48px;
+  border: 6px solid var(--lock-dark);
+  box-shadow:
+    inset 3px 3px 0 rgba(255, 255, 255, 0.5),
+    inset -4px -4px 0 var(--lock-dark),
+    0 6px 0 var(--bg-deep);
+  text-align: center;
+  max-width: 80%;
+}
+.reveal-small { margin: 0; font-family: "Press Start 2P", monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.reveal-inner h2 {
+  font-size: 40px;
+  color: #1a1410;
+  margin: 10px 0;
+  text-shadow: 3px 3px 0 rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.04em;
+}
+.reveal-sub { margin: 4px 0 0; font-size: 16px; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes revealPop {
+  0% { opacity: 0; transform: scale(0.92); }
+  60% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.side { min-width: 0; }
+.side .card { margin-top: 0; margin-bottom: 12px; }
+.side h2 { color: #fff; font-size: 14px; }
+.side .timer { color: var(--gold); font-size: 18px; }
+.side .prompt { color: #fff; font-size: 19px; }
+.urls a { color: var(--gold); word-break: break-all; }
+.urls { margin: 0; padding-left: 18px; }
+.stage-line { font-size: 15px; color: var(--muted); margin: 6px 0 0; }
+.stage-line.win { color: var(--gold); font-weight: 700; font-size: 17px; }
+.opt-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 2px dotted var(--line); font-size: 16px; }
+.opt-row b { font-variant-numeric: tabular-nums; }
+.opt-row.win { color: var(--gold); font-weight: 800; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* ---------- Winner screen (akhir permainan) ---------- */
+.winner-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  background: linear-gradient(180deg, rgba(10, 31, 43, 0.85), rgba(10, 31, 43, 0.95));
+  animation: revealPop 0.6s;
+}
+.winner-inner {
+  text-align: center;
+  padding: 24px 32px;
+  max-width: 90%;
+}
+.winner-inner .reveal-small {
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 0 var(--bg-deep);
+}
+.winner-podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 16px;
+  margin: 24px 0;
+}
+.podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.podium-avatar {
+  width: 56px;
+  height: 56px;
+  background: var(--card);
+  border: 3px solid var(--card-edge);
+  padding: 2px;
+}
+.podium-name {
+  color: var(--fg);
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  margin: 2px 0 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 2px 2px 0 var(--bg-deep);
+}
+.podium-score {
+  color: var(--gold);
+  font-size: 15px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.podium-block {
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--card-edge);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.2),
+    inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+    0 4px 0 var(--bg-deep);
+  margin-top: 6px;
+}
+.podium-block.podium-rank-1 {
+  background: var(--gold);
+  height: 110px;
+}
+.podium-block.podium-rank-2 {
+  background: #c0c0c0;
+  height: 80px;
+}
+.podium-block.podium-rank-3 {
+  background: #cd7f32;
+  height: 60px;
+}
+.podium-medal {
+  font-family: "Press Start 2P", monospace;
+  font-size: 32px;
+  color: #1a1410;
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.4);
+}
+
+@keyframes popIn {
+  0% { transform: translateY(20px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.podium-col { animation: popIn 0.5s ease-out both; }
+.podium-col:nth-child(1) { animation-delay: 0.3s; }
+.podium-col:nth-child(2) { animation-delay: 0.1s; }
+.podium-col:nth-child(3) { animation-delay: 0.5s; }
+
+/* Pulse pada papan rakit saat slot baru terisi */
+@keyframes slotPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); box-shadow: 0 0 0 4px rgba(111, 211, 138, 0.6); }
+  100% { transform: scale(1); }
+}
+.slot.filled { animation: slotPop 0.5s ease-out; }

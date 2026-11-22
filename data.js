@@ -1,106 +1,83 @@
 "use strict";
 
 // Semua isi permainan (potongan, zona, soal, kartu) ada di sini.
-// Kalau mau mengganti soal, cukup edit file ini.
+// Tema: Wawasan Nusantara (konsep geopolitik Indonesia berdasarkan Deklarasi
+// Djuanda 1957 dan Pasal 25A UUD NRI 1945).
 
+// Ronde 1: potongan "Peta Wawasan Nusantara". Sembilan potongan berupa lima
+// pulau besar Indonesia (Sumatera, Jawa, Kalimantan, Sulawesi, Papua) dan
+// empat simbol/pilar wawasan nusantara (Bendera, Pancasila, UUD 1945, Garuda).
 const PIECES = [
-  { id: "sila1", label: "Bintang", color: "#f6e05e", info: "Sila 1: Ketuhanan Yang Maha Esa" },
-  { id: "sila2", label: "Rantai", color: "#a0aec0", info: "Sila 2: Kemanusiaan yang adil dan beradab" },
-  { id: "sila3", label: "Pohon Beringin", color: "#38a169", info: "Sila 3: Persatuan Indonesia" },
-  { id: "sila4", label: "Kepala Banteng", color: "#8d5a2b", info: "Sila 4: Kerakyatan yang dipimpin oleh hikmat kebijaksanaan dalam permusyawaratan perwakilan" },
-  { id: "sila5", label: "Padi dan Kapas", color: "#d69e2e", info: "Sila 5: Keadilan sosial bagi seluruh rakyat Indonesia" },
-  { id: "pita", label: "Pita", color: "#e53e3e", info: "Pita bertuliskan Bhinneka Tunggal Ika" },
-  { id: "badan", label: "Badan", color: "#ecc94b", info: "Bagian badan Garuda" },
-  { id: "kepala", label: "Kepala", color: "#dd6b20", info: "Bagian kepala Garuda" },
-  { id: "sayap", label: "Sayap", color: "#f6ad55", info: "Bagian sayap Garuda" },
+  { id: "sumatera", label: "P. Sumatera", color: "#38a169", info: "Pulau terbesar di bagian barat Indonesia." },
+  { id: "jawa",     label: "P. Jawa",     color: "#d69e2e", info: "Pulau terpadat, pusat pemerintahan Indonesia." },
+  { id: "kalimantan", label: "P. Kalimantan", color: "#dd6b20", info: "Pulau terbesar di Indonesia." },
+  { id: "sulawesi", label: "P. Sulawesi", color: "#805ad5", info: "Pulau berbentuk huruf K di tengah Nusantara." },
+  { id: "papua",    label: "P. Papua",    color: "#3182ce", info: "Pulau paling timur Indonesia." },
+  { id: "bendera",  label: "Merah Putih", color: "#e53e3e", info: "Bendera Negara Kesatuan Republik Indonesia." },
+  { id: "pancasila", label: "Pancasila",  color: "#f6e05e", info: "Dasar ideologi Wawasan Nusantara." },
+  { id: "uud",      label: "UUD 1945",    color: "#ecc94b", info: "Landasan konstitusional (Pasal 25A: Negara Kepulauan)." },
+  { id: "garuda",   label: "Garuda",      color: "#f6ad55", info: "Lambang persatuan bangsa Indonesia." },
 ];
 
-// Jumlah potongan yang dibutuhkan untuk melengkapi satu papan rakit.
-const POOL_SIZE = 12; // jumlah potongan yang beredar di peta sekaligus
+// Jumlah potongan yang beredar di peta sekaligus. Dibuat lebih besar dari
+// jumlah tipe (9) supaya ada duplikasi, dan setiap tipe dijamin minimal
+// muncul satu kali di peta (dijamin di server.js).
+const POOL_SIZE = 14;
 
-// Ronde 2: zona jawaban (berisi nama simbol, bukan nomor pasal).
+// Ronde 2: zona jawaban. Empat aspek Pancagatra dari Wawasan Nusantara.
 const PASAL_ZONES = [
-  { code: "A", label: "Bendera", x: 600, y: 230, r: 85, color: "#e53e3e" },
-  { code: "B", label: "Bahasa", x: 770, y: 400, r: 85, color: "#3182ce" },
-  { code: "C", label: "Lambang", x: 600, y: 570, r: 85, color: "#d69e2e" },
-  { code: "D", label: "Lagu", x: 430, y: 400, r: 85, color: "#38a169" },
+  { code: "A", label: "Politik",        x: 600, y: 215, r: 90, color: "#e53e3e" },
+  { code: "B", label: "Ekonomi",        x: 795, y: 400, r: 90, color: "#d69e2e" },
+  { code: "C", label: "Sosial Budaya",  x: 600, y: 585, r: 90, color: "#38a169" },
+  { code: "D", label: "Hankam",         x: 405, y: 400, r: 90, color: "#3182ce" },
 ];
 
 const PASAL_QUESTIONS = [
-  { text: "Pasal 35 UUD 1945 mengatur simbol negara apa?", answer: "A" },
-  { text: "Pasal 36 UUD 1945 mengatur simbol negara apa?", answer: "B" },
-  { text: "Pasal 36A UUD 1945 mengatur simbol negara apa?", answer: "C" },
-  { text: "Pasal 36B UUD 1945 mengatur simbol negara apa?", answer: "D" },
-  { text: "Simbol negara yang memuat semboyan Bhinneka Tunggal Ika adalah?", answer: "C" },
-  { text: "Simbol negara yang berwarna merah putih adalah?", answer: "A" },
-  { text: "Simbol negara yang berupa lagu kebangsaan adalah?", answer: "D" },
-  { text: "Simbol negara yang menjadi bahasa resmi negara adalah?", answer: "B" },
-  { text: "Simbol negara yang berupa Garuda Pancasila adalah?", answer: "C" },
-  { text: "Simbol negara yang dikibarkan saat upacara adalah?", answer: "A" },
+  { text: "Pemilihan Umum dan sistem pemerintahan presidensial merupakan perwujudan Wawasan Nusantara di aspek?", answer: "A" },
+  { text: "Perdagangan antarpulau, APBN, dan hilirisasi nikel termasuk perwujudan Wawasan Nusantara di aspek?", answer: "B" },
+  { text: "Pelestarian bahasa daerah dan toleransi antarumat beragama termasuk aspek Pancagatra?", answer: "C" },
+  { text: "Patroli TNI AL menjaga kedaulatan di Laut Natuna Utara masuk aspek?", answer: "D" },
+  { text: "Pengakuan Bahasa Indonesia sebagai bahasa persatuan termasuk aspek?", answer: "C" },
+  { text: "Pancasila sebagai satu-satunya ideologi negara mencerminkan kesatuan aspek?", answer: "A" },
+  { text: "Program Tol Laut untuk pemerataan harga antarpulau adalah perwujudan aspek?", answer: "B" },
+  { text: "Wajib bela negara dan Komcad (Komponen Cadangan) termasuk aspek?", answer: "D" },
+  { text: "Festival budaya Papua dan pengakuan masyarakat adat termasuk aspek?", answer: "C" },
+  { text: "Diplomasi bebas aktif Indonesia di PBB dan ASEAN termasuk aspek?", answer: "A" },
+  { text: "Satu kesatuan ekonomi di seluruh Nusantara menuntut pemerataan di aspek?", answer: "B" },
+  { text: "Pos pengamanan perbatasan di Pulau Miangas dan Rondo adalah bentuk aspek?", answer: "D" },
 ];
 const PASAL_COUNT = 10;
 
-// Ronde 3: dua zona identitas.
+// Ronde 3: dua zona klasifikasi astagatra.
+// Trigatra = aspek alamiah (geografi, demografi, sumber kekayaan alam).
+// Pancagatra = aspek sosial (ideologi, politik, ekonomi, sosbud, hankam).
 const PILAH_ZONES = [
-  { code: "pribadi", label: "Identitas Pribadi", x: 420, y: 400, r: 110, color: "#3182ce" },
-  { code: "nasional", label: "Identitas Nasional", x: 780, y: 400, r: 110, color: "#e53e3e" },
+  { code: "trigatra",  label: "Trigatra (Alamiah)", x: 405, y: 400, r: 115, color: "#2f855a" },
+  { code: "pancagatra", label: "Pancagatra (Sosial)", x: 795, y: 400, r: 115, color: "#b7791f" },
 ];
 
 const PILAH_CARDS = [
-  { label: "KTP", type: "pribadi" },
-  { label: "KTM", type: "pribadi" },
-  { label: "NPWP", type: "pribadi" },
-  { label: "SIM", type: "pribadi" },
-  { label: "Bendera Sang Merah Putih", type: "nasional" },
-  { label: "Bahasa Indonesia", type: "nasional" },
-  { label: "Lambang Garuda Pancasila", type: "nasional" },
-  { label: "Lagu Indonesia Raya", type: "nasional" },
-  { label: "Semboyan Bhinneka Tunggal Ika", type: "nasional" },
+  // Trigatra (alamiah)
+  { label: "Letak Indonesia di antara dua benua", type: "trigatra" },
+  { label: "Jumlah penduduk 280 juta jiwa", type: "trigatra" },
+  { label: "Cadangan nikel terbesar dunia", type: "trigatra" },
+  { label: "17.000 pulau dari Sabang sampai Merauke", type: "trigatra" },
+  { label: "Keberagaman suku bangsa 1.300 lebih", type: "trigatra" },
+  { label: "Hutan tropis Kalimantan dan Papua", type: "trigatra" },
+  { label: "Posisi silang di antara dua samudra", type: "trigatra" },
+  // Pancagatra (sosial)
+  { label: "Pancasila sebagai dasar negara", type: "pancagatra" },
+  { label: "Pemilu lima tahun sekali", type: "pancagatra" },
+  { label: "Perdagangan antarprovinsi", type: "pancagatra" },
+  { label: "Gotong royong dan musyawarah mufakat", type: "pancagatra" },
+  { label: "TNI menjaga kedaulatan NKRI", type: "pancagatra" },
+  { label: "Bhinneka Tunggal Ika sebagai semboyan", type: "pancagatra" },
+  { label: "Bahasa Indonesia sebagai bahasa persatuan", type: "pancagatra" },
+  { label: "Politik luar negeri bebas aktif", type: "pancagatra" },
+  { label: "Sistem ekonomi Pancasila", type: "pancagatra" },
 ];
 const PILAH_COUNT = 12;
 
-// Ronde 4: pertanyaan terbuka, dipilih lewat voting tim.
-const SIDANG_QUESTIONS = [
-  {
-    text: "Apa yang membuat Indonesia tetap satu meski beragam bahasa dan budaya?",
-    options: [
-      "Semboyan Bhinneka Tunggal Ika",
-      "Setiap daerah berjalan sendiri-sendiri",
-      "Persatuan dipaksakan oleh satu kelompok",
-      "Tidak perlu ada identitas bersama",
-    ],
-  },
-  {
-    text: "Apa yang sebaiknya dilakukan jika ada perbedaan pendapat dalam kelompok?",
-    options: [
-      "Memaksakan kehendak sendiri",
-      "Bermusyawarah sampai mufakat",
-      "Diam dan menyerah",
-      "Keluar dari kelompok",
-    ],
-  },
-  {
-    text: "Apa fungsi identitas nasional bagi sebuah bangsa?",
-    options: [
-      "Membedakan bangsa dengan bangsa lain",
-      "Tidak punya fungsi apa pun",
-      "Menggantikan identitas pribadi",
-      "Hanya untuk formalitas upacara",
-    ],
-  },
-];
-const SIDANG_COUNT = 2;
-
-// Beberapa variasi peta (sungai, jembatan, batu). Dipilih acak setiap game
-// supaya peta terasa beda-beda, tapi area tengah (zona + pangkalan tim)
-// selalu kering dan aman di semua varian.
-//
-// - rivers: jalur air berbentuk kapsul (garis dari (x1,y1) ke (x2,y2) dengan
-//   lebar w). Berjalan di air memperlambat tim, bukan menghalangi.
-// - bridges: lingkaran di atas sungai; berdiri di dalamnya membuat tanah
-//   terasa kering lagi (jalan normal), jadi jembatan = jalur cepat lewat air.
-// - rocks: batu keras, tetap menghalangi total (nabrak dan mentok) seperti
-//   rintangan sebelumnya.
 const MAP_PRESETS = [
   {
     name: "preset0",
@@ -156,15 +133,8 @@ const MAP_PRESETS = [
 ];
 
 module.exports = {
-  PIECES,
-  POOL_SIZE,
-  PASAL_ZONES,
-  PASAL_QUESTIONS,
-  PASAL_COUNT,
-  PILAH_ZONES,
-  PILAH_CARDS,
-  PILAH_COUNT,
-  SIDANG_QUESTIONS,
-  SIDANG_COUNT,
+  PIECES, POOL_SIZE,
+  PASAL_ZONES, PASAL_QUESTIONS, PASAL_COUNT,
+  PILAH_ZONES, PILAH_CARDS, PILAH_COUNT,
   MAP_PRESETS,
 };

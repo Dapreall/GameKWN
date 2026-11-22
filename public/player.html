@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Jejak Identitas Nusantara - Pemain</title>
+  <title>Jejak Wawasan Nusantara - Pemain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -14,9 +14,10 @@
   <section id="join" class="screen">
     <div class="brand">
       <img id="logo-emblem" class="emblem pixel-img" alt="" width="72" height="72">
-      <h1>Jejak Identitas<br>Nusantara</h1>
+      <h1>Jejak Wawasan<br>Nusantara</h1>
     </div>
     <p class="muted">Masukkan nama kamu dan nama tim. Kalau nama tim belum ada, tim akan dibuat otomatis.</p>
+    <p class="muted small"><b>Tips:</b> putar HP ke landscape saat main biar tombolnya lebih enak.</p>
     <form id="join-form" class="card" autocomplete="off">
       <label>Nama kamu
         <input id="name" maxlength="20" required>
@@ -30,12 +31,13 @@
   </section>
 
   <section id="game" class="screen" hidden>
-    <header class="topbar">
+    <!-- Bar atas: info tim & skor. Tetap tampil di portrait, disembunyikan di landscape. -->
+    <header class="topbar portrait-only">
       <div class="team"><img id="team-dot" class="dot pixel-img" alt=""><span id="team-name"></span></div>
       <div class="score">Skor <b id="my-score">0</b></div>
     </header>
 
-    <section class="card">
+    <section class="card portrait-only">
       <div class="row" style="justify-content: space-between">
         <span id="round-title" class="round-title">Menunggu host</span>
         <span id="timer" class="timer"></span>
@@ -44,33 +46,63 @@
       <p id="status" class="status"></p>
     </section>
 
-    <section id="board-card" class="card" hidden>
-      <p class="label">Papan rakit tim (<span id="board-count">0</span> dari 9)</p>
+    <!-- Papan rakit: hanya ronde Rakit Nusantara. -->
+    <section id="board-card" class="card portrait-only" hidden>
+      <p class="label">Papan Peta Nusantara (<span id="board-count">0</span> dari 9)</p>
       <div id="board" class="board"></div>
       <p id="carry" class="status"></p>
     </section>
 
-    <section id="pickup-area" class="card pickup-area" hidden>
-      <button id="pickup-btn" type="button" class="btn pickup" disabled>Ambil Barang</button>
-      <p class="muted small">Tombol aktif kalau potongan sudah sangat dekat.</p>
-    </section>
-
-    <section id="stick-area" class="card stick-area" hidden>
-      <div id="dpad" class="dpad">
-        <button type="button" class="dpad-btn dpad-up" data-dx="0" data-dy="-1" aria-label="Atas">&#9650;</button>
-        <button type="button" class="dpad-btn dpad-left" data-dx="-1" data-dy="0" aria-label="Kiri">&#9664;</button>
-        <button type="button" class="dpad-btn dpad-down" data-dx="0" data-dy="1" aria-label="Bawah">&#9660;</button>
-        <button type="button" class="dpad-btn dpad-right" data-dx="1" data-dy="0" aria-label="Kanan">&#9654;</button>
+    <!-- Mini map untuk ronde 2 & 3 (dilihat pemain di HP) -->
+    <section id="map-card" class="card" hidden>
+      <div class="map-head">
+        <span id="map-round-title" class="round-title">Jelajah Wawasan</span>
+        <span id="map-timer" class="timer"></span>
       </div>
-      <p class="muted small">Tahan tombol arah untuk menggerakkan karakter tim.</p>
+      <p id="map-prompt" class="prompt small"></p>
+      <div class="player-map-wrap">
+        <canvas id="player-map" width="320" height="214" aria-label="Peta pemain"></canvas>
+        <div id="player-map-labels" class="pmap-labels" aria-hidden="true"></div>
+      </div>
+      <p id="map-status" class="status small"></p>
     </section>
 
-    <section id="options-card" class="card" hidden>
-      <p class="label">Pilih jawaban bersama tim</p>
-      <div id="options" class="options"></div>
+    <!-- Area kontrol: landscape layout = analog kiri, tombol kanan -->
+    <section id="controls" class="controls">
+      <div id="stick-area" class="stick-area" hidden>
+        <div id="dpad" class="dpad">
+          <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="Atas">&#9650;</button>
+          <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="Kiri">&#9664;</button>
+          <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="Bawah">&#9660;</button>
+          <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="Kanan">&#9654;</button>
+        </div>
+      </div>
+
+      <div id="action-area" class="action-area">
+        <!-- Ronde 1: Ambil & Buang -->
+        <div id="rakit-actions" class="action-stack" hidden>
+          <button id="pickup-btn" type="button" class="btn pickup" disabled>Ambil</button>
+          <button id="drop-btn" type="button" class="btn ghost drop" disabled>Buang</button>
+        </div>
+        <!-- Ronde 2 & 3: Kunci & Batal -->
+        <div id="lock-actions" class="action-stack" hidden>
+          <button id="lock-btn" type="button" class="btn lock" disabled>Kunci</button>
+          <button id="cancel-btn" type="button" class="btn ghost cancel" disabled>Batal</button>
+        </div>
+      </div>
     </section>
 
-    <section class="card">
+    <!-- Info kecil di landscape -->
+    <div id="landscape-hud" class="landscape-hud">
+      <div class="lhud-team"><img id="team-dot-l" class="dot pixel-img" alt=""><span id="team-name-l"></span></div>
+      <div class="lhud-mid">
+        <span id="round-title-l" class="lhud-round">Menunggu host</span>
+        <span id="timer-l" class="lhud-timer"></span>
+      </div>
+      <div class="lhud-score">Skor <b id="my-score-l">0</b></div>
+    </div>
+
+    <section class="card portrait-only">
       <p class="label">Papan skor</p>
       <ol id="ranking" class="ranking"></ol>
     </section>

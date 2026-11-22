@@ -1,4 +1,30 @@
+# Dependencies
 node_modules/
+
+# Environment & secrets
 .env
+.env.*
+!.env.example
+
+# Logs
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS files
 .DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test & temp files
+testwrite.txt
+*.tmp
+.cache/

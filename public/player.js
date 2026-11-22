@@ -8,31 +8,14 @@
   var myName = "";
   var state = null;
   var stick = { x: 0, y: 0 };
-  var optionsKey = "";
 
   function $(id) { return document.getElementById(id); }
-  function show(id, on) { $(id).hidden = !on; }
-
-  function saveJoin() {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ name: myName, team: myTeamName })); } catch (e) {}
-  }
-  function loadJoin() {
-    try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch (e) { return null; }
-  }
-  function clearJoin() {
-    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-  }
-  function fmt(sec) {
-    var m = Math.floor(sec / 60);
-    var s = sec % 60;
-    return m + ":" + (s < 10 ? "0" : "") + s;
-  }
-  function el(tag, cls, text) {
-    var n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-  }
+  function show(id, on) { var el = $(id); if (el) el.hidden = !on; }
+  function saveJoin() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ name: myName, team: myTeamName })); } catch (e) {} }
+  function loadJoin() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch (e) { return null; } }
+  function clearJoin() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+  function fmt(sec) { var m = Math.floor(sec / 60); var s = sec % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 
   var logoImg = $("logo-emblem");
   if (logoImg && window.PixelArt) logoImg.src = PixelArt.emblemDataURL(72);
@@ -40,64 +23,44 @@
   function doJoin(name, team, cb) {
     socket.emit("join", { name: name, team: team }, function (res) {
       if (res && res.ok) {
-        myTeamId = res.teamId;
-        myTeamName = res.teamName;
-        myName = name;
+        myTeamId = res.teamId; myTeamName = res.teamName; myName = name;
         saveJoin();
-        show("join", false);
-        show("game", true);
+        show("join", false); show("game", true);
         $("join-error").textContent = "";
       }
       if (cb) cb(res);
     });
   }
 
-  // Prefill form dari data tersimpan.
   var saved = loadJoin();
-  if (saved) {
-    $("name").value = saved.name || "";
-    $("team").value = saved.team || "";
-  }
+  if (saved) { $("name").value = saved.name || ""; $("team").value = saved.team || ""; }
 
   $("join-form").addEventListener("submit", function (e) {
     e.preventDefault();
     var name = $("name").value.trim();
     var team = $("team").value.trim();
-    if (!name || !team) {
-      $("join-error").textContent = "Isi nama dan nama tim dulu.";
-      return;
-    }
+    if (!name || !team) { $("join-error").textContent = "Isi nama dan nama tim dulu."; return; }
     $("join-error").textContent = "Menghubungkan...";
     doJoin(name, team, function (res) {
       if (!res || !res.ok) $("join-error").textContent = (res && res.error) || "Gagal masuk.";
     });
   });
 
-  // Setiap (re)connect, masuk lagi otomatis kalau sebelumnya sudah masuk.
   socket.on("connect", function () {
     var s = loadJoin();
     if (s && s.name && s.team) doJoin(s.name, s.team);
   });
 
   socket.on("reset", function () {
-    myTeamId = null;
-    myTeamName = "";
-    clearJoin();
-    show("game", false);
-    show("join", true);
+    myTeamId = null; myTeamName = ""; clearJoin();
+    show("game", false); show("join", true);
   });
 
-  socket.on("state", function (s) {
-    state = s;
-    render();
-  });
+  socket.on("state", function (s) { state = s; render(); });
 
-  // ---------- Tampilan ----------
   function findMe() {
     if (!state || !myTeamId) return null;
-    for (var i = 0; i < state.teams.length; i++) {
-      if (state.teams[i].id === myTeamId) return state.teams[i];
-    }
+    for (var i = 0; i < state.teams.length; i++) if (state.teams[i].id === myTeamId) return state.teams[i];
     return null;
   }
 
@@ -106,6 +69,12 @@
     var key = d.id + "|" + d.color + "|" + size;
     if (!iconCache[key]) iconCache[key] = PixelArt.iconDataURL(d.id, d.color, size);
     return iconCache[key];
+  }
+  var avatarCache = {};
+  function avatarIcon(color, size) {
+    var key = color + "|" + size;
+    if (!avatarCache[key]) avatarCache[key] = PixelArt.avatarDataURL(color, size);
+    return avatarCache[key];
   }
 
   function renderBoard(me) {
@@ -117,8 +86,7 @@
       var filled = !!me.board[d.id];
       var slot = el("div", "slot" + (filled ? " filled" : ""));
       var img = el("img", "pc pixel-img");
-      img.alt = "";
-      img.src = pieceIcon(d, 32);
+      img.alt = ""; img.src = pieceIcon(d, 32);
       if (!filled) img.style.opacity = "0.35";
       slot.appendChild(img);
       slot.appendChild(el("span", null, d.label));
@@ -133,123 +101,171 @@
     if (state.phase === "between") return "Ronde berikutnya: " + (state.nextRoundTitle || "") + ".";
     if (!st) return "";
     if (state.roundKey === "rakit") {
-      if (me.carryType) return "Kamu membawa potongan. Bawa ke pangkalan tim.";
-      return me.canPickup ? "Potongan sudah dekat. Tekan Ambil Barang." : "Belum membawa potongan.";
+      if (me.carryType) return "Kamu membawa potongan. Bawa ke pangkalan tim, atau tekan Buang.";
+      return me.canPickup ? "Potongan sudah dekat. Tekan Ambil." : "Dekati potongan untuk mengambil.";
     }
-    if (state.roundKey === "pasal") {
-      var mine = null;
-      var results = st.results || [];
-      for (var i = 0; i < results.length; i++) if (results[i].teamId === me.id) mine = results[i];
-      if (mine) {
-        return "Jawaban tim: " + (mine.ok ? "benar" : "salah") + " (" + (mine.pts > 0 ? "+" : "") + mine.pts + " poin).";
-      }
-      return "Lari ke zona jawaban yang kamu anggap benar. Hanya satu kali menjawab per soal.";
-    }
-    if (state.roundKey === "pilah") {
-      var last = st.last;
-      if (last) {
-        if (!last.team) return "Kartu sebelumnya tidak dijawab siapa pun.";
-        return "Kartu sebelumnya: " + last.team + (last.ok ? " benar" : " salah") + " (" + (last.pts > 0 ? "+" : "") + last.pts + ").";
-      }
-      return "Bawa kartu ke zona yang sesuai.";
-    }
-    if (state.roundKey === "sidang") {
-      if (st.stage === "reveal") return "Jawaban terpilih: " + (st.reveal && st.reveal.winner ? st.reveal.winner : "tidak ada suara") + ".";
-      if (st.votedTeams && st.votedTeams.indexOf(me.id) !== -1) return "Pilihan tim sudah terkirim. Tunggu hasilnya.";
-      if (st.stage === "vote") return "Diskusikan bersama tim, lalu pilih satu jawaban.";
+    if (state.roundKey === "pasal" || state.roundKey === "pilah") {
+      if (st.stage === "reveal") return "Jawaban benar ditampilkan.";
+      if (st.stage === "hold") return "Semua tim sudah mengunci jawaban.";
+      if (me.locked) return "Jawaban terkunci. Tekan Batal kalau mau pindah.";
+      return "Masuk ke lingkaran lalu tekan Kunci.";
     }
     return "";
   }
 
-  function renderOptions(me, st) {
-    var box = $("options");
-    var key = st.questionNo + "|" + (st.options || []).join("|");
-    if (key !== optionsKey) {
-      optionsKey = key;
-      box.textContent = "";
-      (st.options || []).forEach(function (opt) {
-        var b = el("button", "btn", opt);
-        b.type = "button";
-        b.dataset.option = opt;
-        b.addEventListener("click", function () {
-          socket.emit("vote", opt, function (res) {
-            if (res && res.ok) {
-              $("status").textContent = "Pilihan tim sudah terkirim.";
-            } else {
-              $("status").textContent = (res && res.error) || "Gagal mengirim pilihan.";
-            }
-          });
-        });
-        box.appendChild(b);
-      });
-    }
-    var voted = st.votedTeams && st.votedTeams.indexOf(me.id) !== -1;
-    var open = st.stage === "vote" && !voted;
-    var buttons = box.querySelectorAll("button");
-    for (var i = 0; i < buttons.length; i++) {
-      buttons[i].disabled = !open;
-    }
-  }
-
-  var avatarCache = {};
-  function avatarIcon(color, size) {
-    var key = color + "|" + size;
-    if (!avatarCache[key]) avatarCache[key] = PixelArt.avatarDataURL(color, size);
-    return avatarCache[key];
-  }
-
   function renderRanking(me) {
     var list = $("ranking");
+    if (!list) return;
     list.textContent = "";
     (state.scoreboard || []).forEach(function (t) {
       var li = el("li", t.id === me.id ? "me" : null);
       var img = el("img", "ranking-dot pixel-img");
-      img.alt = "";
-      img.src = avatarIcon(t.color, 24);
+      img.alt = ""; img.src = avatarIcon(t.color, 24);
       li.appendChild(img);
-      li.appendChild(document.createTextNode(t.name + " - " + t.score + " poin, potongan " + t.pieces + " dari 9"));
+      li.appendChild(document.createTextNode(t.name + " - " + t.score + " poin"));
       list.appendChild(li);
     });
+  }
+
+  var pmapCanvas = $("player-map");
+  var pmapCtx = pmapCanvas.getContext("2d");
+  var PMAP_W = 320, PMAP_H = 214;
+  pmapCanvas.width = PMAP_W; pmapCanvas.height = PMAP_H;
+  var pmapBg = null;
+  var pmapKey = null;
+
+  function scaledMap(m) {
+    var MAP_W = 1200;
+    var sx = PMAP_W / MAP_W;
+    return {
+      rivers: (m.rivers || []).map(function (r) { return { x1: r.x1 * sx, y1: r.y1 * sx, x2: r.x2 * sx, y2: r.y2 * sx, w: r.w * sx }; }),
+      bridges: (m.bridges || []).map(function (b) { return { x: b.x * sx, y: b.y * sx, r: b.r * sx }; }),
+    };
+  }
+
+  function renderMiniMap(me, st) {
+    if (!state || !state.map) return;
+    var MAP_W = 1200;
+    var sx = PMAP_W / MAP_W;
+    if (state.map.name !== pmapKey) {
+      pmapKey = state.map.name;
+      pmapBg = PixelArt.buildBackground(document, PMAP_W, PMAP_H, scaledMap(state.map));
+    }
+    pmapCtx.drawImage(pmapBg, 0, 0);
+    ((state.map && state.map.rocks) || []).forEach(function (ob, idx) {
+      PixelArt.drawObstacle(pmapCtx, ob.x * sx, ob.y * sx, Math.max(3, ob.r * sx), idx);
+    });
+    var now = performance.now();
+    (state.zones || []).forEach(function (z) {
+      var zx = z.x * sx, zy = z.y * sx, zr = z.r * sx;
+      PixelArt.ditherCircle(pmapCtx, zx, zy, zr, z.color);
+      if (me && !me.locked) {
+        var inside = Math.hypot(me.x - z.x, me.y - z.y) <= z.r;
+        if (inside) {
+          var amp = 0.5 + 0.5 * Math.sin(now / 150);
+          pmapCtx.strokeStyle = z.color;
+          pmapCtx.lineWidth = 1 + 2 * amp;
+          pmapCtx.beginPath();
+          pmapCtx.arc(zx, zy, zr + 2 + amp * 2, 0, Math.PI * 2);
+          pmapCtx.stroke();
+        }
+      }
+      if (st && st.stage === "reveal" && st.answer != null && z.code === st.answer) {
+        pmapCtx.strokeStyle = "#ffd54d";
+        pmapCtx.lineWidth = 3;
+        pmapCtx.beginPath();
+        pmapCtx.arc(zx, zy, zr + 4, 0, Math.PI * 2);
+        pmapCtx.stroke();
+      }
+    });
+    (state.teams || []).forEach(function (t) {
+      var tx = t.x * sx, ty = t.y * sx;
+      var isMe = t.id === myTeamId;
+      if (isMe) {
+        PixelArt.drawCharacter(pmapCtx, tx, ty, t.color, now, true, 0.55);
+        if (t.locked) {
+          var p = (now / 600) % 1;
+          pmapCtx.strokeStyle = "#ffd54d";
+          pmapCtx.lineWidth = 1.5;
+          pmapCtx.globalAlpha = 1 - p;
+          pmapCtx.beginPath();
+          pmapCtx.arc(tx, ty - 3, 6 + p * 10, 0, Math.PI * 2);
+          pmapCtx.stroke();
+          pmapCtx.globalAlpha = 1;
+        }
+      } else {
+        pmapCtx.fillStyle = t.color;
+        pmapCtx.beginPath();
+        pmapCtx.arc(tx, ty, 2.5, 0, Math.PI * 2);
+        pmapCtx.fill();
+      }
+    });
+  }
+
+  function renderPlayerMapLabels(st) {
+    var layer = $("player-map-labels");
+    layer.textContent = "";
+    var MAP_W = 1200, MAP_H = 800;
+    (state.zones || []).forEach(function (z) {
+      var lbl = document.createElement("div");
+      lbl.className = "pmap-label";
+      lbl.textContent = z.label;
+      lbl.style.left = (z.x / MAP_W * 100) + "%";
+      lbl.style.top = ((z.y + z.r + 4) / MAP_H * 100) + "%";
+      lbl.style.color = z.color;
+      layer.appendChild(lbl);
+    });
+    if (st && st.kind === "pilah" && st.card) {
+      var cardEl = document.createElement("div");
+      cardEl.className = "pmap-card-chip";
+      cardEl.textContent = "Kartu: " + st.card;
+      layer.appendChild(cardEl);
+    }
+    if (st && st.kind === "pasal" && st.prompt && st.stage !== "gap") {
+      var qEl = document.createElement("div");
+      qEl.className = "pmap-question";
+      qEl.textContent = st.prompt;
+      layer.appendChild(qEl);
+    }
+  }
+
+  function findPieceDef(id) {
+    var defs = state.pieceDefs || [];
+    for (var i = 0; i < defs.length; i++) if (defs[i].id === id) return defs[i];
+    return { id: id, color: "#ccc", label: id };
   }
 
   function render() {
     if (!state || !myTeamId) return;
     var me = findMe();
-    if (!me) {
-      $("prompt").textContent = "Menghubungkan ulang ke tim...";
-      return;
-    }
+    if (!me) { $("prompt").textContent = "Menghubungkan ulang ke tim..."; return; }
     $("team-name").textContent = me.name;
     $("team-dot").src = avatarIcon(me.color, 28);
     $("my-score").textContent = me.score;
+    $("team-name-l").textContent = me.name;
+    $("team-dot-l").src = avatarIcon(me.color, 22);
+    $("my-score-l").textContent = me.score;
 
     var st = state.stage;
-    var roundText = "";
-    var timerText = "";
-    var prompt = "";
+    var roundText = "", timerText = "", prompt = "";
 
-    if (state.phase === "lobby") {
-      roundText = "Menunggu host";
-      prompt = "Tim sudah masuk. Tunggu host memulai.";
-    } else if (state.phase === "playing") {
-      roundText = state.roundTitle;
-      timerText = "Sisa " + fmt(state.roundLeft);
-      prompt = st ? st.prompt : "";
-    } else if (state.phase === "between") {
-      roundText = "Jeda";
-      timerText = "Mulai dalam " + state.betweenLeft + " detik";
-    } else if (state.phase === "finished") {
-      roundText = "Permainan selesai";
-    }
+    if (state.phase === "lobby") { roundText = "Menunggu host"; prompt = "Tim sudah masuk. Tunggu host memulai."; }
+    else if (state.phase === "playing") { roundText = state.roundTitle; timerText = "Sisa " + fmt(state.roundLeft); prompt = st ? st.prompt : ""; }
+    else if (state.phase === "between") { roundText = "Jeda"; timerText = "Mulai dalam " + state.betweenLeft + " detik"; prompt = "Berikutnya: " + (state.nextRoundTitle || ""); }
+    else if (state.phase === "finished") { roundText = "Permainan selesai"; prompt = "Lihat papan skor di layar proyektor."; }
 
     if (state.phase === "playing" && st) {
-      if (st.kind === "pasal") prompt = st.prompt;
-      if (st.kind === "pilah" && st.card) prompt = "Kartu: " + st.card;
-      if (st.kind === "pasal" && st.timeLeft) timerText = "Soal " + st.questionNo + " dari " + st.total + " - " + st.timeLeft + " dtk";
-      if (st.kind === "pilah" && st.card) timerText = st.timeLeft + " dtk";
-      if (st.kind === "sidang") {
+      if (st.kind === "pasal") {
         prompt = st.prompt;
-        timerText = st.stage === "vote" ? "Voting " + st.timeLeft + " dtk" : (st.stage === "reveal" ? "Hasil" : "");
+        if (st.stage === "answer") timerText = "Soal " + st.questionNo + "/" + st.total + " - " + st.timeLeft + " dtk";
+        else if (st.stage === "hold") timerText = "Semua lock: " + st.holdLeft + " dtk";
+        else if (st.stage === "reveal") timerText = "Jawaban terungkap";
+      }
+      if (st.kind === "pilah") {
+        if (st.card) prompt = "Kartu: " + st.card;
+        if (st.stage === "answer") timerText = "Kartu " + st.cardNo + "/" + st.total + " - " + st.timeLeft + " dtk";
+        else if (st.stage === "hold") timerText = "Semua lock: " + st.holdLeft + " dtk";
+        else if (st.stage === "reveal") timerText = "Hasil";
       }
     }
 
@@ -257,51 +273,71 @@
     $("timer").textContent = timerText;
     $("prompt").textContent = prompt;
     $("status").textContent = statusFor(me, st);
+    $("round-title-l").textContent = roundText;
+    $("timer-l").textContent = timerText;
 
-    show("board-card", state.phase !== "lobby");
-    if (state.phase !== "lobby") {
+    var showBoard = state.phase === "playing" && state.roundKey === "rakit";
+    show("board-card", showBoard);
+    if (showBoard) {
       renderBoard(me);
       var carryBox = $("carry");
       carryBox.textContent = "";
       if (me.carryType) {
-        var cd = (state.pieceDefs.find(function (d) { return d.id === me.carryType; }) || { id: me.carryType, color: "#cccccc", label: me.carryType });
+        var cd = findPieceDef(me.carryType);
         var cimg = el("img", "pc-inline pixel-img");
-        cimg.alt = "";
-        cimg.src = pieceIcon(cd, 20);
+        cimg.alt = ""; cimg.src = pieceIcon(cd, 20);
         carryBox.appendChild(cimg);
-        carryBox.appendChild(document.createTextNode(" Sedang dibawa: " + (cd.label || "")));
+        carryBox.appendChild(document.createTextNode(" Membawa: " + (cd.label || "")));
       }
     }
 
-    var playingMove = state.phase === "playing" && state.roundKey !== "sidang";
-    show("stick-area", playingMove);
+    var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
+    show("map-card", showMap);
+    if (showMap) {
+      $("map-round-title").textContent = roundText;
+      $("map-timer").textContent = timerText;
+      $("map-prompt").textContent = prompt;
+      $("map-status").textContent = statusFor(me, st);
+      renderMiniMap(me, st);
+      renderPlayerMapLabels(st);
+    }
 
-    var showPickup = state.phase === "playing" && state.roundKey === "rakit";
-    show("pickup-area", showPickup);
-    if (showPickup) {
+    var playingMove = state.phase === "playing";
+    show("stick-area", playingMove);
+    document.body.classList.toggle("in-game", playingMove);
+
+    var isRakit = playingMove && state.roundKey === "rakit";
+    var isLock = playingMove && (state.roundKey === "pasal" || state.roundKey === "pilah");
+    show("rakit-actions", isRakit);
+    show("lock-actions", isLock);
+
+    if (isRakit) {
       var canPickup = !!me.canPickup && !me.carryType;
       var pbtn = $("pickup-btn");
       pbtn.disabled = !canPickup;
-      pbtn.textContent = me.carryType ? "Sedang Membawa" : (canPickup ? "Ambil Barang" : "Dekati Potongan");
+      pbtn.textContent = me.carryType ? "Membawa" : (canPickup ? "Ambil" : "Dekati");
+      var dbtn = $("drop-btn");
+      dbtn.disabled = !me.carryType;
     }
-
-    var showOptions = state.phase === "playing" && state.roundKey === "sidang" && !!st;
-    show("options-card", showOptions);
-    if (showOptions) renderOptions(me, st);
+    if (isLock) {
+      var inZone = false;
+      if (!me.locked && st && (st.stage === "answer")) {
+        (state.zones || []).forEach(function (z) {
+          if (Math.hypot(me.x - z.x, me.y - z.y) <= z.r) inZone = true;
+        });
+      }
+      var lbtn = $("lock-btn");
+      var cbtn = $("cancel-btn");
+      lbtn.disabled = me.locked || !inZone || !st || st.stage !== "answer";
+      lbtn.textContent = me.locked ? "Terkunci" : "Kunci";
+      cbtn.disabled = !me.locked || !st || st.stage !== "answer";
+      lbtn.classList.toggle("locked", !!me.locked);
+    }
 
     renderRanking(me);
   }
 
-  // ---------- D-pad ----------
   var activeDirs = { up: false, down: false, left: false, right: false };
-
-  function dirFromBtn(btn) {
-    if (btn.classList.contains("dpad-up")) return "up";
-    if (btn.classList.contains("dpad-down")) return "down";
-    if (btn.classList.contains("dpad-left")) return "left";
-    if (btn.classList.contains("dpad-right")) return "right";
-    return null;
-  }
   function updateStick() {
     var x = 0, y = 0;
     if (activeDirs.left) x -= 1;
@@ -316,19 +352,10 @@
   var dpadBtns = $("dpad").querySelectorAll(".dpad-btn");
   for (var di = 0; di < dpadBtns.length; di++) {
     (function (btn) {
-      var dir = dirFromBtn(btn);
+      var dir = btn.dataset.dir;
       if (!dir) return;
-      function press(e) {
-        e.preventDefault();
-        activeDirs[dir] = true;
-        btn.classList.add("pressed");
-        updateStick();
-      }
-      function release() {
-        activeDirs[dir] = false;
-        btn.classList.remove("pressed");
-        updateStick();
-      }
+      function press(e) { e.preventDefault(); activeDirs[dir] = true; btn.classList.add("pressed"); updateStick(); }
+      function release() { activeDirs[dir] = false; btn.classList.remove("pressed"); updateStick(); }
       btn.addEventListener("pointerdown", press);
       btn.addEventListener("pointerup", release);
       btn.addEventListener("pointercancel", release);
@@ -336,13 +363,23 @@
     })(dpadBtns[di]);
   }
 
-  setInterval(function () {
-    if (myTeamId) socket.emit("move", stick);
-  }, 50);
+  setInterval(function () { if (myTeamId) socket.emit("move", stick); }, 50);
 
-  // ---------- Tombol ambil barang ----------
-  $("pickup-btn").addEventListener("click", function () {
+  $("pickup-btn").addEventListener("click", function () { if (!myTeamId) return; socket.emit("pickup"); });
+  $("drop-btn").addEventListener("click", function () { if (!myTeamId) return; socket.emit("drop"); });
+  $("lock-btn").addEventListener("click", function () {
     if (!myTeamId) return;
-    socket.emit("pickup");
+    socket.emit("lock", function (res) { if (res && !res.ok) $("status").textContent = res.error || "Gagal mengunci."; });
   });
+  $("cancel-btn").addEventListener("click", function () { if (!myTeamId) return; socket.emit("cancel"); });
+
+  function animLoop() {
+    if (state && myTeamId) {
+      var me = findMe();
+      var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
+      if (me && showMap) renderMiniMap(me, state.stage);
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
 })();
