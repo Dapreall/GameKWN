@@ -5,6 +5,7 @@
   var canvas = document.getElementById("map");
   var ctx = canvas.getContext("2d");
   var state = null;
+  var prevRoundIndex = -1;
   var shown = {};
   var hostPin = null;
   var hostOk = false;
@@ -29,10 +30,24 @@
   function $(id) { return document.getElementById(id); }
   var logoImg = $("logo-emblem");
   if (logoImg) logoImg.src = PixelArt.emblemDataURL(40);
+  var lobbyLogo = $("lobby-logo");
+  if (lobbyLogo) lobbyLogo.src = PixelArt.emblemDataURL(64);
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function fmt(sec) { var m = Math.floor(sec / 60); var s = sec % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
 
-  function updateHostUI() { $("host-login").hidden = hostOk; $("host-controls").hidden = !hostOk; }
+  var ROUND_INFO = {
+    rakit: { desc: "Kumpulkan 9 potongan Peta Nusantara. Bawa ke pangkalan tim!" },
+    pasal: { desc: "Jelajah 4 aspek Pancagatra: Politik, Ekonomi, Sosial Budaya, Hankam." },
+    pilah: { desc: "Pilah pernyataan ke Trigatra (alamiah) atau Pancagatra (sosial)." },
+  };
+
+  function updateHostUI() {
+    var loggedIn = hostOk;
+    var loginA = $("host-login"); if (loginA) loginA.hidden = loggedIn;
+    var ctrlA = $("host-controls"); if (ctrlA) ctrlA.hidden = !loggedIn;
+    var loginB = $("host-login-2"); if (loginB) loginB.hidden = loggedIn;
+    var ctrlB = $("host-controls-2"); if (ctrlB) ctrlB.hidden = !loggedIn;
+  }
   function authHost(pin, cb) {
     socket.emit("host:auth", pin, function (res) {
       hostOk = !!(res && res.ok);
@@ -41,17 +56,29 @@
       updateHostUI();
     });
   }
-  $("pin-btn").addEventListener("click", function () {
-    authHost($("pin").value, function (res) { $("host-msg").textContent = res && res.ok ? "Kontrol host aktif." : (res && res.error) || "Gagal."; });
-  });
-  function hostCmd(name) {
+  function bindHostAuth(pinInputId, pinBtnId, msgId) {
+    var btn = $(pinBtnId);
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      authHost($(pinInputId).value, function (res) {
+        var m = $(msgId); if (m) m.textContent = res && res.ok ? "Kontrol host aktif." : (res && res.error) || "Gagal.";
+      });
+    });
+  }
+  bindHostAuth("pin", "pin-btn", "host-msg");
+  bindHostAuth("pin2", "pin-btn-2", "host-msg-2");
+
+  function hostCmd(name, msgId) {
     return function () {
-      socket.emit(name, function (res) { $("host-msg").textContent = res && res.ok ? "" : (res && res.error) || ""; });
+      socket.emit(name, function (res) {
+        var m = $(msgId || "host-msg"); if (m) m.textContent = res && res.ok ? "" : (res && res.error) || "";
+      });
     };
   }
-  $("btn-start").addEventListener("click", hostCmd("host:start"));
-  $("btn-skip").addEventListener("click", hostCmd("host:skip"));
-  $("btn-reset").addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset")(); });
+  var sb = $("btn-start"); if (sb) sb.addEventListener("click", hostCmd("host:start", "host-msg"));
+  var skb = $("btn-skip"); if (skb) skb.addEventListener("click", hostCmd("host:skip", "host-msg-2"));
+  var rb = $("btn-reset"); if (rb) rb.addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset", "host-msg")(); });
+  var rb2 = $("btn-reset-2"); if (rb2) rb2.addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset", "host-msg-2")(); });
 
   socket.on("connect", function () { if (hostPin) authHost(hostPin); });
 
@@ -61,39 +88,81 @@
       mapKey = s.map.name;
       bg = PixelArt.buildBackground(document, LOW_W, LOW_H, scaledMap(s.map));
     }
+    handlePhaseTransition(s);
+    renderPhaseLayout(s);
     renderPanel();
     renderMapLabels(s);
     renderPasalOverlay(s);
     renderRevealPopup(s);
+    renderLobby(s);
+    renderBetweenIntro(s);
     renderWinnerScreen(s);
   });
+
+  function handlePhaseTransition(s) {
+    var isNewRound = s.phase === "playing" && s.roundIndex !== prevRoundIndex;
+    if (isNewRound) {
+      showRoundIntro(s);
+    }
+    prevRoundIndex = s.roundIndex;
+  }
+
+  function showRoundIntro(s) {
+    var info = ROUND_INFO[s.roundKey] || { desc: "" };
+    var intro = $("round-intro");
+    var title = $("round-intro-title");
+    var desc = $("round-intro-desc");
+    if (!intro || !title) return;
+    title.textContent = "RONDE " + (s.roundIndex + 1) + ": " + (s.roundTitle || "").toUpperCase();
+    desc.textContent = info.desc || "";
+    intro.hidden = false;
+    intro.classList.remove("show");
+    void intro.offsetWidth;
+    intro.classList.add("show");
+    setTimeout(function () {
+      if (intro) {
+        intro.classList.remove("show");
+        setTimeout(function () { intro.hidden = true; }, 500);
+      }
+    }, 3000);
+  }
+
+  function renderPhaseLayout(s) {
+    var lobby = $("lobby-screen");
+    var game = $("game-layout");
+    var below = $("below-fold");
+    var isLobby = s.phase === "lobby";
+    if (lobby) lobby.hidden = !isLobby;
+    if (game) game.hidden = isLobby;
+    if (below) below.hidden = isLobby;
+  }
 
   function renderPanel() {
     if (!state) return;
     var s = state;
     var phaseText = { lobby: "Menunggu host", playing: "Sedang berlangsung", between: "Jeda antar ronde", finished: "Permainan selesai" };
-    $("phase-label").textContent = phaseText[s.phase] || s.phase;
+    var pl = $("phase-label"); if (pl) pl.textContent = phaseText[s.phase] || s.phase;
 
     var title = "Jejak Wawasan Nusantara";
     if (s.phase === "playing") title = s.roundTitle;
     else if (s.phase === "between") title = "Berikutnya: " + (s.nextRoundTitle || "");
     else if (s.phase === "finished") title = "Juara ada di papan skor";
-    $("round-title").textContent = title;
+    var rt = $("round-title"); if (rt) rt.textContent = title;
 
     var timer = "";
     if (s.phase === "playing") timer = "Sisa waktu ronde " + fmt(s.roundLeft);
     else if (s.phase === "between") timer = "Mulai dalam " + s.betweenLeft + " detik";
-    $("timer").textContent = timer;
+    var tm = $("timer"); if (tm) tm.textContent = timer;
 
     var prompt = "";
     if (s.phase === "lobby") prompt = "Buka alamat di HP, masukkan nama dan nama tim. Host menekan Mulai saat semua siap.";
     else if (s.phase === "playing" && s.stage) prompt = s.stage.prompt || "";
-    $("prompt").textContent = prompt;
+    var pm = $("prompt"); if (pm) pm.textContent = prompt;
 
     renderStageExtra(s);
     renderRanking(s);
     renderUrls(s);
-    $("team-count").textContent = s.teams.length + " dari 15 tim sudah masuk";
+    var tc = $("team-count"); if (tc) tc.textContent = s.teams.length + " dari 15 tim sudah masuk";
   }
 
   function zoneLabel(code, s) {
@@ -104,6 +173,7 @@
 
   function renderStageExtra(s) {
     var box = $("stage-extra");
+    if (!box) return;
     box.textContent = "";
     var st = s.stage;
     if (!st || s.phase !== "playing") return;
@@ -138,6 +208,7 @@
 
   function renderRanking(s) {
     var list = $("ranking");
+    if (!list) return;
     list.textContent = "";
     (s.scoreboard || []).forEach(function (t) {
       var li = el("li");
@@ -152,20 +223,92 @@
 
   function renderUrls(s) {
     var list = $("urls");
-    if (list.dataset.key === (s.lanUrls || []).join("|")) return;
-    list.dataset.key = (s.lanUrls || []).join("|");
-    list.textContent = "";
-    (s.lanUrls || []).forEach(function (u) {
-      var li = el("li");
-      var a = el("a", null, u);
-      a.href = u; a.target = "_blank";
-      li.appendChild(a); list.appendChild(li);
+    if (!list) return;
+    if (list.dataset.key !== (s.lanUrls || []).join("|")) {
+      list.dataset.key = (s.lanUrls || []).join("|");
+      list.textContent = "";
+      (s.lanUrls || []).forEach(function (u) {
+        var li = el("li");
+        var a = el("a", null, u);
+        a.href = u; a.target = "_blank";
+        li.appendChild(a); list.appendChild(li);
+      });
+      if (!(s.lanUrls || []).length) list.appendChild(el("li", "muted", "Alamat jaringan tidak ditemukan. Cek WiFi laptop."));
+    }
+    renderJoinUrlAndQr(s);
+  }
+
+  function joinUrl() {
+    var origin = window.location.origin;
+    if (/localhost|127\.0\.0\.1/.test(origin) && state && state.lanUrls && state.lanUrls.length) {
+      return state.lanUrls[0];
+    }
+    return origin;
+  }
+
+  function makeQr(url, box) {
+    if (!box) return;
+    if (box.dataset.url === url) return;
+    box.dataset.url = url;
+    box.textContent = "";
+    if (typeof qrcode === "undefined") { box.textContent = "QR library gagal dimuat."; return; }
+    try {
+      var qr = qrcode(0, "M");
+      qr.addData(url);
+      qr.make();
+      box.innerHTML = qr.createSvgTag({ scalable: true, margin: 2 });
+    } catch (e) { box.textContent = "Gagal buat QR: " + e.message; }
+  }
+
+  function renderJoinUrlAndQr(s) {
+    var url = joinUrl();
+    var urlEl = $("join-url"); if (urlEl) urlEl.textContent = url;
+    var urlEl2 = $("lobby-join-url"); if (urlEl2) urlEl2.textContent = url;
+    makeQr(url, $("qrcode"));
+    makeQr(url, $("lobby-qrcode"));
+  }
+
+  function renderLobby(s) {
+    if (s.phase !== "lobby") return;
+    var count = (s.teams || []).length;
+    var cEl = $("lobby-team-count"); if (cEl) cEl.textContent = count;
+
+    var waiting = $("lobby-waiting");
+    if (waiting) waiting.hidden = count > 0;
+
+    var grid = $("lobby-teams-grid");
+    if (!grid) return;
+    var sig = (s.teams || []).map(function (t) { return t.id + "|" + t.name + "|" + t.color; }).join("::");
+    if (grid.dataset.sig === sig) return;
+    grid.dataset.sig = sig;
+    grid.textContent = "";
+    (s.teams || []).forEach(function (t, i) {
+      var chip = el("div", "lobby-team-chip");
+      chip.style.setProperty("--tc", t.color);
+      chip.style.animationDelay = (i * 0.05) + "s";
+      var img = el("img", "lobby-team-avatar pixel-img");
+      img.src = PixelArt.avatarDataURL(t.color, 40);
+      img.alt = "";
+      chip.appendChild(img);
+      chip.appendChild(el("span", "lobby-team-name", t.name));
+      chip.appendChild(el("span", "lobby-team-members", t.members + " HP"));
+      grid.appendChild(chip);
     });
-    if (!(s.lanUrls || []).length) list.appendChild(el("li", "muted", "Alamat jaringan tidak ditemukan. Cek WiFi laptop."));
+  }
+
+  function renderBetweenIntro(s) {
+    var box = $("between-intro");
+    if (!box) return;
+    var active = s.phase === "between";
+    box.hidden = !active;
+    if (!active) return;
+    var tt = $("between-intro-title"); if (tt) tt.textContent = "Berikutnya: " + (s.nextRoundTitle || "");
+    var cd = $("between-intro-countdown"); if (cd) cd.textContent = "Mulai dalam " + s.betweenLeft + " detik...";
   }
 
   function renderPasalOverlay(s) {
     var ov = $("pasal-overlay");
+    if (!ov) return;
     var st = s && s.stage;
     var active = s.phase === "playing" && s.roundKey === "pasal" &&
       st && (st.stage === "answer" || st.stage === "hold");
@@ -185,6 +328,7 @@
   function renderRevealPopup(s) {
     var st = s && s.stage;
     var pop = $("reveal-popup");
+    if (!pop) return;
     var active = s.phase === "playing" && (s.roundKey === "pasal" || s.roundKey === "pilah") &&
       st && st.stage === "reveal" && st.answer;
     pop.hidden = !active;
@@ -197,32 +341,61 @@
     $("reveal-sub").textContent = subText;
   }
 
+  // Signature-based skip untuk cegah re-render flashing animasi
+  var winnerSig = null;
   function renderWinnerScreen(s) {
     var scr = $("winner-screen");
+    if (!scr) return;
     var active = s.phase === "finished" && (s.scoreboard || []).length > 0;
     scr.hidden = !active;
-    if (!active) return;
+    if (!active) { winnerSig = null; return; }
+
+    // Skip rebuild kalau data sama (biarkan animasi stay di frame terakhir)
+    var sig = (s.scoreboard || []).map(function (t) { return t.id + ":" + t.score; }).join("|");
+    if (sig === winnerSig) return;
+    winnerSig = sig;
+
     var top3 = (s.scoreboard || []).slice(0, 3);
     var podium = $("winner-podium");
-    podium.textContent = "";
-    // Podium order display: #2 kiri, #1 tengah, #3 kanan
-    var order = [1, 0, 2];
-    order.forEach(function (idx) {
-      if (idx >= top3.length) return;
-      var t = top3[idx];
-      var rank = idx + 1;
-      var col = el("div", "podium-col podium-col-rank-" + rank);
-      var img = el("img", "podium-avatar pixel-img");
-      img.src = PixelArt.avatarDataURL(t.color, 56);
-      img.alt = "";
-      col.appendChild(img);
-      col.appendChild(el("p", "podium-name", t.name));
-      col.appendChild(el("p", "podium-score", t.score + " poin"));
-      var block = el("div", "podium-block podium-rank-" + rank);
-      block.appendChild(el("span", "podium-medal", rank === 1 ? "1" : rank === 2 ? "2" : "3"));
-      col.appendChild(block);
-      podium.appendChild(col);
-    });
+    if (podium) {
+      podium.textContent = "";
+      var order = [1, 0, 2];
+      order.forEach(function (idx) {
+        if (idx >= top3.length) return;
+        var t = top3[idx];
+        var rank = idx + 1;
+        var col = el("div", "podium-col podium-col-rank-" + rank);
+        var img = el("img", "podium-avatar pixel-img");
+        img.src = PixelArt.avatarDataURL(t.color, 72);
+        img.alt = "";
+        col.appendChild(img);
+        col.appendChild(el("p", "podium-name", t.name));
+        col.appendChild(el("p", "podium-score", t.score + " poin"));
+        var block = el("div", "podium-block podium-rank-" + rank);
+        block.appendChild(el("span", "podium-medal", rank === 1 ? "1" : rank === 2 ? "2" : "3"));
+        col.appendChild(block);
+        podium.appendChild(col);
+      });
+    }
+    var lb = $("winner-leaderboard");
+    if (lb) {
+      lb.textContent = "";
+      (s.scoreboard || []).forEach(function (t, idx) {
+        var li = el("li", "wlb-row" + (idx < 3 ? " wlb-top" : ""));
+        li.style.animationDelay = (0.6 + idx * 0.07) + "s";
+        var rank = el("span", "wlb-rank", "#" + (idx + 1));
+        var img = el("img", "wlb-avatar pixel-img");
+        img.src = PixelArt.avatarDataURL(t.color, 24);
+        img.alt = "";
+        var name = el("span", "wlb-name", t.name);
+        var score = el("span", "wlb-score", t.score + " poin");
+        li.appendChild(rank);
+        li.appendChild(img);
+        li.appendChild(name);
+        li.appendChild(score);
+        lb.appendChild(li);
+      });
+    }
   }
 
   var labelPool = {};
@@ -242,9 +415,10 @@
   }
 
   function renderMapLabels(s) {
+    if (!labelsLayer) return;
     var hideTeams = !!s.hideTeamsOnDisplay;
     var activeTeam = [];
-    if (!hideTeams) {
+    if (!hideTeams && s.phase !== "lobby") {
       (s.teams || []).forEach(function (t) {
         var key = "team:" + t.id;
         activeTeam.push(key);
@@ -267,14 +441,16 @@
     sweepLabels("base:", activeTeam);
 
     var activeZone = [];
-    (s.zones || []).forEach(function (z) {
-      var key = "zone:" + z.code;
-      activeZone.push(key);
-      var l = labelFor(key, "map-label map-label-zone");
-      l.textContent = z.label;
-      l.style.setProperty("--tc", z.color);
-      placeLabel(l, z.x, z.y + z.r + 10);
-    });
+    if (s.phase !== "lobby") {
+      (s.zones || []).forEach(function (z) {
+        var key = "zone:" + z.code;
+        activeZone.push(key);
+        var l = labelFor(key, "map-label map-label-zone");
+        l.textContent = z.label;
+        l.style.setProperty("--tc", z.color);
+        placeLabel(l, z.x, z.y + z.r + 10);
+      });
+    }
     sweepLabels("zone:", activeZone);
   }
 

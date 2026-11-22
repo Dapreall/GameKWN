@@ -88,58 +88,23 @@
   }
 
   var ICONS = {
-    sumatera: [
-      [-6, -5, 3, 2], [-5, -3, 3, 2], [-3, -1, 3, 2],
-      [-1, 1, 3, 2], [1, 3, 3, 2], [3, 5, 2, 2],
-    ],
-    jawa: [
-      [-6, 0, 3, 2], [-3, -1, 4, 3], [1, 0, 4, 2], [5, 1, 2, 2],
-    ],
-    kalimantan: [
-      [-4, -4, 7, 2], [-5, -2, 10, 5], [-4, 3, 8, 2], [-2, 5, 4, 1],
-    ],
-    sulawesi: [
-      [-1, -5, 2, 11],
-      [-5, -5, 3, 2], [-5, -3, 2, 2],
-      [2, -5, 4, 2], [4, -3, 2, 2],
-      [-5, 3, 3, 2], [2, 3, 3, 2],
-    ],
-    papua: [
-      [-6, -1, 3, 2], [-5, 1, 2, 2],
-      [-3, -3, 9, 7],
-    ],
-    bendera: [
-      [-6, -6, 1, 12],
-      [-5, -5, 10, 3],
-    ],
-    pancasila: [
-      [-5, -4, 10, 3], [-4, -1, 8, 4], [-2, 3, 4, 2],
-      [-1, -3, 2, 3],
-    ],
-    uud: [
-      [-6, -3, 12, 6], [-1, -3, 2, 6],
-      [-5, -4, 4, 1], [1, -4, 4, 1],
-    ],
-    garuda: [
-      [-1, -3, 2, 6],
-      [-6, -2, 4, 2], [-5, 0, 3, 1],
-      [2, -2, 4, 2], [2, 0, 3, 1],
-      [-1, -5, 2, 2],
-    ],
+    sumatera: [[-6,-5,3,2],[-5,-3,3,2],[-3,-1,3,2],[-1,1,3,2],[1,3,3,2],[3,5,2,2]],
+    jawa: [[-6,0,3,2],[-3,-1,4,3],[1,0,4,2],[5,1,2,2]],
+    kalimantan: [[-4,-4,7,2],[-5,-2,10,5],[-4,3,8,2],[-2,5,4,1]],
+    sulawesi: [[-1,-5,2,11],[-5,-5,3,2],[-5,-3,2,2],[2,-5,4,2],[4,-3,2,2],[-5,3,3,2],[2,3,3,2]],
+    papua: [[-6,-1,3,2],[-5,1,2,2],[-3,-3,9,7]],
+    bendera: [[-6,-6,1,12],[-5,-5,10,3]],
+    pancasila: [[-5,-4,10,3],[-4,-1,8,4],[-2,3,4,2],[-1,-3,2,3]],
+    uud: [[-6,-3,12,6],[-1,-3,2,6],[-5,-4,4,1],[1,-4,4,1]],
+    garuda: [[-1,-3,2,6],[-6,-2,4,2],[-5,0,3,1],[2,-2,4,2],[2,0,3,1],[-1,-5,2,2]],
   };
-  var ICON_ACCENT = {
-    bendera: [[-5, -2, 10, 3]],
-    pancasila: [[-1, -3, 2, 3]],
-  };
-  var ICON_ACCENT_COLOR = {
-    bendera: "#fbf6ea",
-    pancasila: "#fff4d6",
-  };
+  var ICON_ACCENT = { bendera: [[-5,-2,10,3]], pancasila: [[-1,-3,2,3]] };
+  var ICON_ACCENT_COLOR = { bendera: "#fbf6ea", pancasila: "#fff4d6" };
 
   function drawPieceIcon(ctx, x, y, typeId, color, scale, outline) {
     scale = scale || 1;
     outline = outline || "#1a1410";
-    var blocks = ICONS[typeId] || [[-5, -5, 10, 10]];
+    var blocks = ICONS[typeId] || [[-5,-5,10,10]];
     drawBlocks(ctx, x, y, blocks, color, outline, scale);
     var accent = ICON_ACCENT[typeId];
     if (accent) {
@@ -165,17 +130,8 @@
     var shirtSh = shade(color, -0.3);
     var legL = moving && Math.sin(tms / 90) > 0 ? 1 : 0;
     var legR = moving && Math.sin(tms / 90) <= 0 ? 1 : 0;
-    var blocks = [
-      [-3, 3 + legL, 2, 3],
-      [1, 3 + legR, 2, 3],
-    ];
-    drawBlocks(ctx, x, y - bob, blocks, shoe, "#1a1410", scale);
-    var body = [
-      [-4, -1, 2, 4],
-      [2, -1, 2, 4],
-      [-3, -2, 6, 5],
-    ];
-    drawBlocks(ctx, x, y - bob, body, color, "#1a1410", scale);
+    drawBlocks(ctx, x, y - bob, [[-3, 3 + legL, 2, 3], [1, 3 + legR, 2, 3]], shoe, "#1a1410", scale);
+    drawBlocks(ctx, x, y - bob, [[-4, -1, 2, 4], [2, -1, 2, 4], [-3, -2, 6, 5]], color, "#1a1410", scale);
     drawBlocks(ctx, x, y - bob, [[-3, 2, 6, 1]], shirtSh, null, scale);
     drawBlocks(ctx, x, y - bob, [[-3, -8, 6, 5]], skin, "#1a1410", scale);
     drawBlocks(ctx, x, y - bob, [[-3, -9, 6, 2]], hair, "#1a1410", scale);
@@ -183,16 +139,31 @@
     rect(ctx, x + (1) * scale, y - bob + (-6) * scale, scale, scale, "#1a1410");
   }
 
+  // Avatar untuk ranking/lobby/podium — muka yang lebih ekspresif.
   function avatarCanvas(color, size) {
     var c = global.document.createElement("canvas");
     c.width = size; c.height = size;
     var ctx = c.getContext("2d");
     var scale = size / 16;
-    drawBlocks(ctx, size / 2, size / 2 + 2 * scale, [[-4, -4, 8, 7]], color, "#1a1410", scale);
-    drawBlocks(ctx, size / 2, size / 2 + 2 * scale, [[-3, -9, 6, 5]], "#f1c27d", "#1a1410", scale);
-    drawBlocks(ctx, size / 2, size / 2 + 2 * scale, [[-3, -10, 6, 2]], "#2b1b12", "#1a1410", scale);
-    rect(ctx, size / 2 - 2 * scale, size / 2 - 7 * scale, scale, scale, "#1a1410");
-    rect(ctx, size / 2 + 1 * scale, size / 2 - 7 * scale, scale, scale, "#1a1410");
+    var cx = size / 2;
+    var cy = size / 2 + 2 * scale;
+    // Body
+    drawBlocks(ctx, cx, cy, [[-4, -4, 8, 7]], color, "#1a1410", scale);
+    // Head
+    drawBlocks(ctx, cx, cy, [[-3, -9, 6, 5]], "#f1c27d", "#1a1410", scale);
+    // Hair
+    drawBlocks(ctx, cx, cy, [[-3, -10, 6, 2]], "#2b1b12", "#1a1410", scale);
+    // Eyes (2x2 — kelihatan saat discale kecil)
+    drawBlocks(ctx, cx, cy, [[-2, -7, 2, 2]], "#1a1410", null, scale);
+    drawBlocks(ctx, cx, cy, [[1, -7, 2, 2]], "#1a1410", null, scale);
+    // White specular di mata
+    drawBlocks(ctx, cx, cy, [[-1, -7, 1, 1]], "#ffffff", null, scale);
+    drawBlocks(ctx, cx, cy, [[2, -7, 1, 1]], "#ffffff", null, scale);
+    // Pipi merah muda (blush)
+    drawBlocks(ctx, cx, cy, [[-3, -5, 1, 1]], "#f49a9a", null, scale);
+    drawBlocks(ctx, cx, cy, [[2, -5, 1, 1]], "#f49a9a", null, scale);
+    // Senyum
+    drawBlocks(ctx, cx, cy, [[-1, -5, 2, 1]], "#8c3838", null, scale);
     return c;
   }
   function avatarDataURL(color, size) { return avatarCanvas(color, size).toDataURL("image/png"); }
