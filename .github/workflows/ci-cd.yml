@@ -1,0 +1,142 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    name: Syntax Check & Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check JavaScript files
+        run: |
+          node --check server.js
+          node --check data.js
+          for f in public/*.js; do
+            node --check "$f"
+          done
+
+      - name: Smoke test HTTP and Socket.IO endpoints
+        run: |
+          set -euo pipefail
+          PORT=1945 node server.js > /tmp/gamekwn-smoke.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 15); do
+            if curl -fsS http://127.0.0.1:1945/ >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          curl -fsS http://127.0.0.1:1945/ >/dev/null
+          curl -fsS http://127.0.0.1:1945/display >/dev/null
+          curl -fsS http://127.0.0.1:1945/socket.io/socket.io.js >/dev/null
+          echo "Smoke test passed."
+
+  deploy:
+    name: Deploy to Server
+    needs: ci
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST || 'shahwul.duckdns.org' }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '2222' }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "Missing SSH_PRIVATE_KEY repository secret." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          {
+            echo "Host $SSH_HOST"
+            echo "  IdentityFile ~/.ssh/deploy_key"
+            echo "  IdentitiesOnly yes"
+          } > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sync project files to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST || 'shahwul.duckdns.org' }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '2222' }}
+          SSH_USER: ${{ secrets.SSH_USER || 'shahwul' }}
+        run: |
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p ~/GameKWN"
+          rsync -az --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            -e "ssh -p $SSH_PORT" \
+            ./ "$SSH_USER@$SSH_HOST:~/GameKWN/"
+
+      - name: Install dependencies & restart PM2 process
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST || 'shahwul.duckdns.org' }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '2222' }}
+          SSH_USER: ${{ secrets.SSH_USER || 'shahwul' }}
+        run: |
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" bash -s <<'EOF'
+            set -euo pipefail
+            cd ~/GameKWN
+            npm ci --omit=dev
+
+            if pm2 describe gamekwn >/dev/null 2>&1; then
+              PORT=1945 pm2 restart gamekwn --update-env
+            else
+              PORT=1945 pm2 start server.js --name gamekwn --update-env
+            fi
+            pm2 save
+
+            for i in $(seq 1 20); do
+              if curl -fsS http://127.0.0.1:1945/ >/dev/null && curl -fsS http://127.0.0.1:1945/display >/dev/null; then
+                echo "Health check passed."
+                exit 0
+              fi
+              sleep 1
+            done
+
+            echo "GameKWN failed health check." >&2
+            pm2 logs gamekwn --lines 30 --nostream >&2 || true
+            exit 1
+          EOF
