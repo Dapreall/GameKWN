@@ -1,142 +1,193 @@
 <!doctype html>
 <html lang="id">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Jejak Wawasan Nusantara - Pemain</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="player">
-
-  <section id="join" class="screen">
-    <div class="brand">
-      <img id="logo-emblem" class="emblem pixel-img" alt="" width="72" height="72">
-      <h1>Jejak Wawasan<br>Nusantara</h1>
-    </div>
-    <p class="muted">Masukkan nama kamu dan nama tim.</p>
-    <p class="muted small"><b>Tips:</b> putar HP ke landscape saat main biar tombolnya lebih enak.</p>
-    <form id="join-form" class="card" autocomplete="off">
-      <label>Nama kamu<input id="name" maxlength="20" required></label>
-      <label>Nama tim<input id="team" maxlength="20" required></label>
-      <button type="submit" class="btn">Masuk</button>
-      <p id="join-error" class="error" role="alert"></p>
-    </form>
-  </section>
-
-  <section id="game" class="screen" hidden>
-    <!-- TOPBAR: info tim & skor. Portrait only. -->
-    <header class="topbar portrait-only">
-      <div class="team"><img id="team-dot" class="dot pixel-img" alt=""><span id="team-name"></span></div>
-      <div class="score">Skor <b id="my-score">0</b></div>
-    </header>
-
-    <!-- Info card. Portrait only. -->
-    <section class="card portrait-only">
-      <div class="row" style="justify-content: space-between">
-        <span id="round-title" class="round-title">Menunggu host</span>
-        <span id="timer" class="timer"></span>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Jejak Wawasan Nusantara - Pemain</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="player">
+    <section id="join" class="screen">
+      <div class="brand">
+        <img
+          id="logo-emblem"
+          class="emblem pixel-img"
+          alt=""
+          width="72"
+          height="72"
+        />
+        <h1>Jejak Wawasan<br />Nusantara</h1>
       </div>
-      <p id="prompt" class="prompt"></p>
-      <p id="status" class="status"></p>
+      <p class="muted">Masukkan nama kamu dan nama tim.</p>
+      <p class="muted small">
+        <b>Tips:</b> putar HP ke landscape saat main biar tombolnya lebih enak.
+      </p>
+      <form id="join-form" class="card" autocomplete="off">
+        <label>Nama kamu<input id="name" maxlength="20" required /></label>
+        <label>Nama tim<input id="team" maxlength="20" required /></label>
+        <button type="submit" class="btn">Masuk</button>
+        <p id="join-error" class="error" role="alert"></p>
+      </form>
     </section>
 
-    <!-- Papan rakit: TIDAK portrait-only lagi. Visible kalo tidak hidden (controlled JS). -->
-    <section id="board-card" class="card" hidden>
-      <p class="label">Papan Peta Nusantara (<span id="board-count">0</span> dari 9)</p>
-      <div id="board" class="board"></div>
-      <p id="carry" class="status"></p>
-    </section>
-
-    <!-- Mini map untuk ronde 2 & 3 (atau Rakit untuk player map besar landscape) -->
-    <section id="map-card" class="card" hidden>
-      <div class="map-head portrait-only">
-        <span id="map-round-title" class="round-title">Jelajah Wawasan</span>
-        <span id="map-timer" class="timer"></span>
-      </div>
-      <p id="map-prompt" class="prompt small portrait-only"></p>
-      <!-- Question banner yang tetap tampil di landscape -->
-      <div id="landscape-question" class="landscape-question" hidden></div>
-      <div class="player-map-wrap">
-        <canvas id="player-map" width="320" height="214" aria-label="Peta pemain"></canvas>
-        <div id="player-map-labels" class="pmap-labels" aria-hidden="true"></div>
-      </div>
-      <p id="map-status" class="status small portrait-only"></p>
-    </section>
-
-    <!-- Area kontrol -->
-    <section id="controls" class="controls">
-      <div id="stick-area" class="stick-area" hidden>
-        <div id="dpad" class="dpad">
-          <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="Atas">&#9650;</button>
-          <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="Kiri">&#9664;</button>
-          <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="Bawah">&#9660;</button>
-          <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="Kanan">&#9654;</button>
+    <section id="game" class="screen" hidden>
+      <!-- TOPBAR: info tim & skor. Portrait only. -->
+      <header class="topbar portrait-only">
+        <div class="team">
+          <img id="team-dot" class="dot pixel-img" alt="" /><span
+            id="team-name"
+          ></span>
         </div>
+        <div class="score">Skor <b id="my-score">0</b></div>
+      </header>
+
+      <!-- Info card. Portrait only. -->
+      <section class="card portrait-only">
+        <div class="row" style="justify-content: space-between">
+          <span id="round-title" class="round-title">Menunggu host</span>
+          <span id="timer" class="timer"></span>
+        </div>
+        <p id="prompt" class="prompt"></p>
+        <p id="status" class="status"></p>
+      </section>
+
+      <!-- Papan rakit: TIDAK portrait-only lagi. Visible kalo tidak hidden (controlled JS). -->
+      <section id="board-card" class="card" hidden>
+        <p class="label">
+          Papan Peta Nusantara (<span id="board-count">0</span> dari 9)
+        </p>
+        <div id="board" class="board"></div>
+        <p id="carry" class="status"></p>
+      </section>
+
+      <!-- Mini map untuk ronde 2 & 3 (atau Rakit untuk player map besar landscape) -->
+      <section id="map-card" class="card" hidden>
+        <div class="map-head portrait-only">
+          <span id="map-round-title" class="round-title">Jelajah Wawasan</span>
+          <span id="map-timer" class="timer"></span>
+        </div>
+        <p id="map-prompt" class="prompt small portrait-only"></p>
+        <!-- Question banner yang tetap tampil di landscape -->
+        <div id="landscape-question" class="landscape-question" hidden></div>
+        <div class="player-map-wrap">
+          <canvas
+            id="player-map"
+            width="320"
+            height="214"
+            aria-label="Peta pemain"
+          ></canvas>
+          <div
+            id="player-map-labels"
+            class="pmap-labels"
+            aria-hidden="true"
+          ></div>
+        </div>
+        <p id="map-status" class="status small portrait-only"></p>
+      </section>
+
+      <!-- Area kontrol -->
+      <section id="controls" class="controls">
+        <div id="stick-area" class="stick-area" hidden>
+          <div id="analog-stick" class="analog-stick" role="application" aria-label="Analog kontrol pergerakan">
+            <div class="analog-base"></div>
+            <div id="analog-knob" class="analog-knob"></div>
+          </div>
+        </div>
+
+        <div id="action-area" class="action-area">
+          <div id="rakit-actions" class="action-stack" hidden>
+            <button id="pickup-btn" type="button" class="btn pickup" disabled>
+              Ambil
+            </button>
+            <button id="drop-btn" type="button" class="btn ghost drop" disabled>
+              Buang
+            </button>
+          </div>
+          <div id="lock-actions" class="action-stack" hidden>
+            <button id="lock-btn" type="button" class="btn lock" disabled>
+              Kunci
+            </button>
+            <button
+              id="cancel-btn"
+              type="button"
+              class="btn ghost cancel"
+              disabled
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- HUD kecil untuk landscape -->
+      <div id="landscape-hud" class="landscape-hud">
+        <div class="lhud-team">
+          <img id="team-dot-l" class="dot pixel-img" alt="" /><span
+            id="team-name-l"
+          ></span>
+        </div>
+        <div class="lhud-mid">
+          <span id="round-title-l" class="lhud-round">Menunggu host</span>
+          <span id="timer-l" class="lhud-timer"></span>
+        </div>
+        <div class="lhud-score">Skor <b id="my-score-l">0</b></div>
       </div>
 
-      <div id="action-area" class="action-area">
-        <div id="rakit-actions" class="action-stack" hidden>
-          <button id="pickup-btn" type="button" class="btn pickup" disabled>Ambil</button>
-          <button id="drop-btn" type="button" class="btn ghost drop" disabled>Buang</button>
+      <!-- Contekan Astagatra: ditampilkan khusus di ronde Pilah -->
+      <section id="cheat-pilah" class="card cheat-card portrait-only" hidden>
+        <p class="label">Astagatra</p>
+        <div class="cheat-grid">
+          <div class="cheat-col cheat-trigatra">
+            <p class="cheat-head">Trigatra</p>
+            <ul class="cheat-list">
+              <li>Geografi</li>
+              <li>Kekayaan Alam</li>
+              <li>Kependudukan</li>
+            </ul>
+          </div>
+          <div class="cheat-col cheat-pancagatra">
+            <p class="cheat-head">Pancagatra</p>
+            <ul class="cheat-list">
+              <li>Ideologi</li>
+              <li>Politik</li>
+              <li>Ekonomi</li>
+              <li>Sosial Budaya</li>
+              <li>Hankam</li>
+            </ul>
+          </div>
         </div>
-        <div id="lock-actions" class="action-stack" hidden>
-          <button id="lock-btn" type="button" class="btn lock" disabled>Kunci</button>
-          <button id="cancel-btn" type="button" class="btn ghost cancel" disabled>Batal</button>
-        </div>
-      </div>
+      </section>
+
+      <section class="card portrait-only">
+        <p class="label">Papan skor</p>
+        <ol id="ranking" class="ranking"></ol>
+      </section>
     </section>
 
-    <!-- HUD kecil untuk landscape -->
-    <div id="landscape-hud" class="landscape-hud">
-      <div class="lhud-team"><img id="team-dot-l" class="dot pixel-img" alt=""><span id="team-name-l"></span></div>
-      <div class="lhud-mid">
-        <span id="round-title-l" class="lhud-round">Menunggu host</span>
-        <span id="timer-l" class="lhud-timer"></span>
-      </div>
-      <div class="lhud-score">Skor <b id="my-score-l">0</b></div>
-    </div>
+    <button
+      id="mute-toggle"
+      class="mute-toggle"
+      type="button"
+      aria-label="Toggle suara"
+    >
+      <span id="mute-icon">&#x1F50A;</span>
+    </button>
 
-    <!-- Contekan Astagatra: ditampilkan khusus di ronde Pilah -->
-    <section id="cheat-pilah" class="card cheat-card portrait-only" hidden>
-      <p class="label">Contekan Astagatra</p>
-      <div class="cheat-grid">
-        <div class="cheat-col cheat-trigatra">
-          <p class="cheat-head">Trigatra (Alamiah)</p>
-          <ul class="cheat-list">
-            <li>Geografi</li>
-            <li>Kekayaan Alam</li>
-            <li>Kependudukan</li>
-          </ul>
-        </div>
-        <div class="cheat-col cheat-pancagatra">
-          <p class="cheat-head">Pancagatra (Sosial)</p>
-          <ul class="cheat-list">
-            <li>Ideologi</li>
-            <li>Politik</li>
-            <li>Ekonomi</li>
-            <li>Sosial Budaya</li>
-            <li>Hankam</li>
-          </ul>
-        </div>
-      </div>
-    </section>
+    <!-- Toast notif singkat (muncul lalu fade sendiri) -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <section class="card portrait-only">
-      <p class="label">Papan skor</p>
-      <ol id="ranking" class="ranking"></ol>
-    </section>
-  </section>
-
-  <button id="mute-toggle" class="mute-toggle" type="button" aria-label="Toggle suara">
-    <span id="mute-icon">&#x1F50A;</span>
-  </button>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="pixelart.js"></script>
-  <script src="audio.js"></script>
-  <script src="player.js"></script>
-</body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="pixelart.js"></script>
+    <script src="audio.js"></script>
+    <script src="player.js"></script>
+  </body>
 </html>

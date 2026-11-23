@@ -339,9 +339,16 @@
       var canPickup = !!me.canPickup && !me.carryType;
       var pbtn = $("pickup-btn");
       pbtn.disabled = !canPickup;
-      pbtn.textContent = me.carryType ? "Membawa" : (canPickup ? "Ambil" : "Dekati");
+      pbtn.textContent = "Ambil";
+      // Simpan "reason" di data atribut supaya klik di-disabled bisa kasih toast
+      // yang sesuai konteks.
+      pbtn.dataset.reason = me.carryType
+        ? "Lagi bawa potongan. Antar ke pangkalan tim dulu."
+        : "Dekati potongan dulu buat ngambil.";
       var dbtn = $("drop-btn");
       dbtn.disabled = !me.carryType;
+      dbtn.textContent = "Buang";
+      dbtn.dataset.reason = "Gak ada yang bisa dibuang — kamu lagi gak bawa apa-apa.";
     }
     if (isLock) {
       var inZone = false;
@@ -353,43 +360,127 @@
       var lbtn = $("lock-btn");
       var cbtn = $("cancel-btn");
       lbtn.disabled = me.locked || !inZone || !st || st.stage !== "answer";
-      lbtn.textContent = me.locked ? "Terkunci" : "Kunci";
+      lbtn.textContent = "Kunci";
+      lbtn.dataset.reason = me.locked
+        ? "Udah ngunci. Tekan Batal kalau mau pindah."
+        : (!st || st.stage !== "answer"
+            ? "Belum waktunya ngunci."
+            : "Masuk ke salah satu lingkaran jawaban dulu.");
       cbtn.disabled = !me.locked || !st || st.stage !== "answer";
+      cbtn.textContent = "Batal";
+      cbtn.dataset.reason = "Belum ngunci jawaban apa-apa.";
       lbtn.classList.toggle("locked", !!me.locked);
     }
 
     renderRanking(me);
   }
 
-  var activeDirs = { up: false, down: false, left: false, right: false };
-  function updateStick() {
-    var x = 0, y = 0;
-    if (activeDirs.left) x -= 1;
-    if (activeDirs.right) x += 1;
-    if (activeDirs.up) y -= 1;
-    if (activeDirs.down) y += 1;
-    var len = Math.hypot(x, y);
-    if (len > 1) { x /= len; y /= len; }
-    stick = { x: x, y: y };
-  }
+  // ---------- Analog joystick ----------
+  (function setupAnalog() {
+    var stickEl = $("analog-stick");
+    var knob = $("analog-knob");
+    if (!stickEl || !knob) return;
+    var pointerId = null;
+    var centerX = 0, centerY = 0, maxR = 0;
+    var deadzone = 0.12;
 
-  var dpadBtns = $("dpad").querySelectorAll(".dpad-btn");
-  for (var di = 0; di < dpadBtns.length; di++) {
-    (function (btn) {
-      var dir = btn.dataset.dir;
-      if (!dir) return;
-      function press(e) { e.preventDefault(); activeDirs[dir] = true; btn.classList.add("pressed"); updateStick(); }
-      function release() { activeDirs[dir] = false; btn.classList.remove("pressed"); updateStick(); }
-      btn.addEventListener("pointerdown", press);
-      btn.addEventListener("pointerup", release);
-      btn.addEventListener("pointercancel", release);
-      btn.addEventListener("pointerleave", release);
-    })(dpadBtns[di]);
-  }
+    function refreshBounds() {
+      var r = stickEl.getBoundingClientRect();
+      centerX = r.left + r.width / 2;
+      centerY = r.top + r.height / 2;
+      // Batas gerak knob = radius base dikurangi radius knob (supaya knob gak keluar)
+      maxR = Math.min(r.width, r.height) * 0.5 - knob.offsetWidth * 0.25;
+    }
+
+    function setKnob(dx, dy) {
+      // translate dari pusat
+      knob.style.transform = "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px))";
+    }
+    function resetKnob() {
+      stick = { x: 0, y: 0 };
+      setKnob(0, 0);
+      stickEl.classList.remove("active");
+    }
+
+    function updateFromPoint(clientX, clientY) {
+      var dx = clientX - centerX;
+      var dy = clientY - centerY;
+      var len = Math.hypot(dx, dy);
+      var limited = len > maxR ? maxR : len;
+      var kx = len > 0 ? (dx / len) * limited : 0;
+      var ky = len > 0 ? (dy / len) * limited : 0;
+      setKnob(kx, ky);
+      // Output ke stick (ternormalisasi -1..1)
+      var nx = kx / maxR, ny = ky / maxR;
+      var mag = Math.hypot(nx, ny);
+      if (mag < deadzone) { stick = { x: 0, y: 0 }; return; }
+      // Rescale supaya di luar deadzone tetap full range
+      var scale = (mag - deadzone) / (1 - deadzone);
+      scale = Math.min(1, scale);
+      stick = { x: (nx / mag) * scale, y: (ny / mag) * scale };
+    }
+
+    stickEl.addEventListener("pointerdown", function (e) {
+      if (pointerId !== null) return;
+      pointerId = e.pointerId;
+      stickEl.setPointerCapture(pointerId);
+      stickEl.classList.add("active");
+      refreshBounds();
+      updateFromPoint(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+    stickEl.addEventListener("pointermove", function (e) {
+      if (e.pointerId !== pointerId) return;
+      updateFromPoint(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+    function endPointer(e) {
+      if (e.pointerId !== pointerId) return;
+      try { stickEl.releasePointerCapture(pointerId); } catch (_) {}
+      pointerId = null;
+      resetKnob();
+    }
+    stickEl.addEventListener("pointerup", endPointer);
+    stickEl.addEventListener("pointercancel", endPointer);
+    window.addEventListener("resize", refreshBounds);
+    window.addEventListener("orientationchange", refreshBounds);
+  })();
 
   setInterval(function () { if (myTeamId) socket.emit("move", stick); }, 50);
 
   function playSfx(name) { if (window.GameAudio) GameAudio.sfx(name); }
+
+  // ---------- Toast notif ----------
+  var toastTimer = null;
+  function showToast(msg, variant) {
+    var el = $("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "toast show" + (variant ? " " + variant : "");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      el.className = "toast" + (variant ? " " + variant : "");
+    }, 2200);
+    playSfx("click");
+  }
+
+  // Tangkap klik di tombol disabled untuk kasih toast penjelasan.
+  // Browser biasanya nge-swallow click di disabled; jadi kita pakai pointerdown.
+  function wireDisabledToast(btnId) {
+    var btn = $(btnId);
+    if (!btn) return;
+    btn.addEventListener("pointerdown", function (e) {
+      if (btn.disabled) {
+        var reason = btn.dataset.reason || "Belum bisa dipakai.";
+        showToast(reason, "warn");
+        e.preventDefault();
+      }
+    });
+  }
+  wireDisabledToast("pickup-btn");
+  wireDisabledToast("drop-btn");
+  wireDisabledToast("lock-btn");
+  wireDisabledToast("cancel-btn");
 
   $("pickup-btn").addEventListener("click", function () {
     if (!myTeamId) return;
@@ -482,6 +573,112 @@
     if (state && myTeamId) {
       var me = findMe();
       var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
+      if (me && showMap) renderMiniMap(me, state.stage);
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
+})();
+("reveal");
+      } else {
+        GameAudio.sfx("reveal");
+      }
+    }
+    var me2 = findMe();
+    if (me2 && s.roundKey === "rakit") {
+      if (me2.pieces > paPrevBoardCount) GameAudio.sfx("thud");
+      paPrevBoardCount = me2.pieces;
+    } else paPrevBoardCount = 0;
+    paPrevPhase = s.phase;
+    paPrevRoundKey = s.roundKey;
+    paPrevStageStage = st ? st.stage : null;
+    paPrevStageAnswer = st ? st.answer : null;
+  }
+  socket.on("state", function (s) { try { syncPlayerAudio(s); } catch (e) {} });
+
+  var muteBtn = $("mute-toggle");
+  function updateMuteIcon() {
+    if (!muteBtn) return;
+    var icon = $("mute-icon");
+    var m = window.GameAudio && GameAudio.isMuted();
+    if (icon) icon.innerHTML = m ? "&#x1F507;" : "&#x1F50A;";
+    muteBtn.classList.toggle("muted", !!m);
+  }
+  if (muteBtn) {
+    muteBtn.addEventListener("click", function () {
+      if (!window.GameAudio) return;
+      GameAudio.init();
+      GameAudio.toggleMute();
+      updateMuteIcon();
+    });
+    updateMuteIcon();
+  }
+
+  function animLoop() {
+    if (state && myTeamId) {
+      var me = findMe();
+      var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
+      if (me && showMap) renderMiniMap(me, state.stage);
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
+})();
+undKey === "pasal" || state.roundKey === "pilah");
+      if (me && showMap) renderMiniMap(me, state.stage);
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
+})();
+e) { mine = st.results[i]; break; }
+        if (mine) GameAudio.sfx(mine.ok ? "correct" : "wrong");
+        else GameAudio.sfx("reveal");
+      } else {
+        GameAudio.sfx("reveal");
+      }
+    }
+    var me2 = findMe();
+    if (me2 && s.roundKey === "rakit") {
+      if (me2.pieces > paPrevBoardCount) GameAudio.sfx("thud");
+      paPrevBoardCount = me2.pieces;
+    } else paPrevBoardCount = 0;
+    paPrevPhase = s.phase;
+    paPrevRoundKey = s.roundKey;
+    paPrevStageStage = st ? st.stage : null;
+    paPrevStageAnswer = st ? st.answer : null;
+  }
+  socket.on("state", function (s) { try { syncPlayerAudio(s); } catch (e) {} });
+
+  var muteBtn = $("mute-toggle");
+  function updateMuteIcon() {
+    if (!muteBtn) return;
+    var icon = $("mute-icon");
+    var m = window.GameAudio && GameAudio.isMuted();
+    if (icon) icon.innerHTML = m ? "&#x1F507;" : "&#x1F50A;";
+    muteBtn.classList.toggle("muted", !!m);
+  }
+  if (muteBtn) {
+    muteBtn.addEventListener("click", function () {
+      if (!window.GameAudio) return;
+      GameAudio.init();
+      GameAudio.toggleMute();
+      updateMuteIcon();
+    });
+    updateMuteIcon();
+  }
+
+  function animLoop() {
+    if (state && myTeamId) {
+      var me = findMe();
+      var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
+      if (me && showMap) renderMiniMap(me, state.stage);
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
+})();
+undKey === "pasal" || state.roundKey === "pilah");
       if (me && showMap) renderMiniMap(me, state.stage);
     }
     requestAnimationFrame(animLoop);

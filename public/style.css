@@ -3,6 +3,37 @@
 
 [hidden] { display: none !important; }
 
+/* ---------- Toast (notif singkat) ---------- */
+.toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: #0a1f2b;
+  color: #ffd54d;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 12px 18px;
+  border: 3px solid #ffd54d;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.1),
+    0 4px 0 #000;
+  max-width: 85vw;
+  text-align: center;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  letter-spacing: 0.04em;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.warn { border-color: #ef5b4e; color: #ffb3ab; }
+.toast.ok { border-color: #6fd38a; color: #c9ffd9; }
+
 /* ---------- Floating mute toggle (musik + SFX) ---------- */
 .mute-toggle {
   position: fixed;
@@ -190,40 +221,57 @@ body.in-game .controls { display: flex; }
 
 .stick-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
-.dpad {
-  display: grid;
-  grid-template-columns: 62px 62px 62px;
-  grid-template-rows: 62px 62px 62px;
-  gap: 6px;
-  justify-content: center;
+/* ---------- Analog joystick ---------- */
+.analog-stick {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
 }
-.dpad-btn {
-  font-size: 22px;
-  font-family: "Press Start 2P", monospace;
-  border: none;
-  background: var(--card);
-  color: var(--gold);
+.analog-stick:active { cursor: grabbing; }
+.analog-base {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--card) 0%, var(--bg-deep) 80%);
+  border: 3px solid var(--card-edge);
   box-shadow:
-    inset 2px 2px 0 var(--card-hi),
+    inset 3px 3px 0 var(--card-hi),
     inset -3px -3px 0 var(--card-edge),
     0 3px 0 var(--bg-deep);
-  cursor: pointer;
-  user-select: none;
-  touch-action: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-.dpad-btn:active, .dpad-btn.pressed {
-  transform: translateY(2px);
-  background: var(--accent-soft);
-  color: var(--accent);
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.3), inset -2px -2px 0 var(--card-edge);
+.analog-base::after {
+  /* Cross-hair guide di tengah base */
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 207, 92, 0.2);
 }
-.dpad-up { grid-column: 2; grid-row: 1; }
-.dpad-left { grid-column: 1; grid-row: 2; }
-.dpad-down { grid-column: 2; grid-row: 3; }
-.dpad-right { grid-column: 3; grid-row: 2; }
+.analog-knob {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffd98a 0%, var(--gold) 50%, #a87c14 100%);
+  border: 3px solid var(--card-edge);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.4),
+    inset -3px -3px 0 rgba(0, 0, 0, 0.3),
+    0 3px 0 var(--bg-deep);
+  pointer-events: none;
+  transition: background 0.1s;
+  will-change: transform;
+}
+.analog-stick.active .analog-knob {
+  background: radial-gradient(circle at 35% 30%, #fff5c9 0%, var(--accent) 60%, var(--accent-dark) 100%);
+}
 
 .action-area { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 140px; }
 .action-stack { display: flex; flex-direction: column; gap: 10px; width: 100%; }
@@ -423,11 +471,8 @@ body.in-game .controls { display: flex; }
   }
   .stick-area { pointer-events: auto; }
   .action-area { pointer-events: auto; }
-  .dpad {
-    grid-template-columns: 52px 52px 52px;
-    grid-template-rows: 52px 52px 52px;
-    gap: 4px;
-  }
+  .analog-stick { width: 140px; height: 140px; }
+  .analog-knob { width: 64px; height: 64px; }
   .action-area { min-width: 130px; }
   .btn.pickup, .btn.drop, .btn.lock, .btn.cancel {
     min-height: 50px;
@@ -648,11 +693,8 @@ body.display { background: var(--bg); min-height: 100vh; }
   }
   .stick-area { pointer-events: auto; }
   .action-area { pointer-events: auto; }
-  .dpad {
-    grid-template-columns: 52px 52px 52px;
-    grid-template-rows: 52px 52px 52px;
-    gap: 4px;
-  }
+  .analog-stick { width: 140px; height: 140px; }
+  .analog-knob { width: 64px; height: 64px; }
   .action-area { min-width: 130px; }
   .btn.pickup, .btn.drop, .btn.lock, .btn.cancel {
     min-height: 50px;
@@ -1934,13 +1976,9 @@ body.display .layout { min-height: calc(100vh - 32px); }
     margin: 0;
     padding: 0;
   }
-  .dpad {
-    display: grid;
-    grid-template-columns: 48px 48px 48px;
-    grid-template-rows: 48px 48px 48px;
-    gap: 3px;
-  }
-  .dpad-btn { font-size: 18px; }
+  /* Analog stick ukuran landscape */
+  .analog-stick { width: 130px; height: 130px; }
+  .analog-knob { width: 58px; height: 58px; }
 
   /* Tombol aksi (kanan) */
   #action-area {
@@ -2092,3 +2130,4 @@ body.display .layout { min-height: calc(100vh - 32px); }
 .btn.new-session-btn:hover { filter: brightness(1.05); }
 .btn.new-session-btn:active { transform: translateY(2px); }
 .winner-actions .muted { max-width: 360px; text-align: center; }
+                              
