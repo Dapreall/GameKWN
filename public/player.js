@@ -123,7 +123,8 @@
       var img = el("img", "ranking-dot pixel-img");
       img.alt = ""; img.src = avatarIcon(t.color, 24);
       li.appendChild(img);
-      li.appendChild(document.createTextNode(t.name + " - " + t.score + " poin"));
+      var displayName = (t.playerName || t.name) + " (" + t.name + ")";
+      li.appendChild(document.createTextNode(displayName + " - " + t.score + " poin"));
       list.appendChild(li);
     });
   }
@@ -573,112 +574,6 @@
     if (state && myTeamId) {
       var me = findMe();
       var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
-      if (me && showMap) renderMiniMap(me, state.stage);
-    }
-    requestAnimationFrame(animLoop);
-  }
-  requestAnimationFrame(animLoop);
-})();
-("reveal");
-      } else {
-        GameAudio.sfx("reveal");
-      }
-    }
-    var me2 = findMe();
-    if (me2 && s.roundKey === "rakit") {
-      if (me2.pieces > paPrevBoardCount) GameAudio.sfx("thud");
-      paPrevBoardCount = me2.pieces;
-    } else paPrevBoardCount = 0;
-    paPrevPhase = s.phase;
-    paPrevRoundKey = s.roundKey;
-    paPrevStageStage = st ? st.stage : null;
-    paPrevStageAnswer = st ? st.answer : null;
-  }
-  socket.on("state", function (s) { try { syncPlayerAudio(s); } catch (e) {} });
-
-  var muteBtn = $("mute-toggle");
-  function updateMuteIcon() {
-    if (!muteBtn) return;
-    var icon = $("mute-icon");
-    var m = window.GameAudio && GameAudio.isMuted();
-    if (icon) icon.innerHTML = m ? "&#x1F507;" : "&#x1F50A;";
-    muteBtn.classList.toggle("muted", !!m);
-  }
-  if (muteBtn) {
-    muteBtn.addEventListener("click", function () {
-      if (!window.GameAudio) return;
-      GameAudio.init();
-      GameAudio.toggleMute();
-      updateMuteIcon();
-    });
-    updateMuteIcon();
-  }
-
-  function animLoop() {
-    if (state && myTeamId) {
-      var me = findMe();
-      var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
-      if (me && showMap) renderMiniMap(me, state.stage);
-    }
-    requestAnimationFrame(animLoop);
-  }
-  requestAnimationFrame(animLoop);
-})();
-undKey === "pasal" || state.roundKey === "pilah");
-      if (me && showMap) renderMiniMap(me, state.stage);
-    }
-    requestAnimationFrame(animLoop);
-  }
-  requestAnimationFrame(animLoop);
-})();
-e) { mine = st.results[i]; break; }
-        if (mine) GameAudio.sfx(mine.ok ? "correct" : "wrong");
-        else GameAudio.sfx("reveal");
-      } else {
-        GameAudio.sfx("reveal");
-      }
-    }
-    var me2 = findMe();
-    if (me2 && s.roundKey === "rakit") {
-      if (me2.pieces > paPrevBoardCount) GameAudio.sfx("thud");
-      paPrevBoardCount = me2.pieces;
-    } else paPrevBoardCount = 0;
-    paPrevPhase = s.phase;
-    paPrevRoundKey = s.roundKey;
-    paPrevStageStage = st ? st.stage : null;
-    paPrevStageAnswer = st ? st.answer : null;
-  }
-  socket.on("state", function (s) { try { syncPlayerAudio(s); } catch (e) {} });
-
-  var muteBtn = $("mute-toggle");
-  function updateMuteIcon() {
-    if (!muteBtn) return;
-    var icon = $("mute-icon");
-    var m = window.GameAudio && GameAudio.isMuted();
-    if (icon) icon.innerHTML = m ? "&#x1F507;" : "&#x1F50A;";
-    muteBtn.classList.toggle("muted", !!m);
-  }
-  if (muteBtn) {
-    muteBtn.addEventListener("click", function () {
-      if (!window.GameAudio) return;
-      GameAudio.init();
-      GameAudio.toggleMute();
-      updateMuteIcon();
-    });
-    updateMuteIcon();
-  }
-
-  function animLoop() {
-    if (state && myTeamId) {
-      var me = findMe();
-      var showMap = state.phase === "playing" && (state.roundKey === "pasal" || state.roundKey === "pilah");
-      if (me && showMap) renderMiniMap(me, state.stage);
-    }
-    requestAnimationFrame(animLoop);
-  }
-  requestAnimationFrame(animLoop);
-})();
-undKey === "pasal" || state.roundKey === "pilah");
       if (me && showMap) renderMiniMap(me, state.stage);
     }
     requestAnimationFrame(animLoop);

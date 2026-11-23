@@ -240,9 +240,14 @@ function randomZoneSpot(avoid) {
   return avoid.length === 0 ? { x: 220, y: 400 } : { x: 980, y: 400 };
 }
 
-function findOrCreateTeam(name) {
+function findOrCreateTeam(name, playerName) {
   const key = name.toLowerCase();
-  for (const t of game.teams.values()) { if (t.key === key) return { team: t }; }
+  for (const t of game.teams.values()) {
+    if (t.key === key) {
+      if (playerName && !t.playerName) t.playerName = playerName;
+      return { team: t };
+    }
+  }
   if (game.teams.size >= MAX_TEAMS) return { error: "Jumlah tim sudah penuh (maksimal 15 tim)." };
   const used = new Set([...game.teams.values()].map((t) => t.spawn));
   let spawn = 0;
@@ -250,7 +255,7 @@ function findOrCreateTeam(name) {
   const sp = game.spawnPoints[spawn];
   const team = {
     id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    key, name, color: PALETTE[spawn], spawn,
+    key, name, playerName: playerName || name, color: PALETTE[spawn], spawn,
     x: sp.x, y: sp.y, input: { x: 0, y: 0 },
     score: 0, board: {}, carry: null, nearPieceId: null,
     members: new Set(), locked: false, lockedZone: null,
@@ -656,7 +661,7 @@ function snapshot() {
   const hideTeamsOnDisplay =
     roundKey === "pasal" && stage && (stage.stage === "answer" || stage.stage === "hold");
   const teamData = teams.map((t) => ({
-    id: t.id, name: t.name, color: t.color,
+    id: t.id, name: t.name, playerName: t.playerName || t.name, color: t.color,
     x: Math.round(t.x), y: Math.round(t.y),
     spawnX: game.spawnPoints[t.spawn].x, spawnY: game.spawnPoints[t.spawn].y,
     score: t.score, board: t.board, pieces: boardCount(t),
@@ -683,7 +688,7 @@ function snapshot() {
     teams: teamData,
     hideTeamsOnDisplay: hideTeamsOnDisplay,
     scoreboard: teams.slice().sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-      .map((t) => ({ id: t.id, name: t.name, color: t.color, score: t.score, pieces: boardCount(t) })),
+      .map((t) => ({ id: t.id, name: t.name, playerName: t.playerName || t.name, color: t.color, score: t.score, pieces: boardCount(t) })),
     map: { name: game.map.name, rivers: game.map.rivers, bridges: game.map.bridges, rocks: game.map.rocks },
     lanUrls, width: W, height: H,
   };
@@ -706,7 +711,7 @@ io.on("connection", (socket) => {
     const playerName = clean(payload && payload.name, 20);
     const teamName = clean(payload && payload.team, 20);
     if (!playerName || !teamName) return reply(ack, { ok: false, error: "Isi nama dan nama tim dulu." });
-    const r = findOrCreateTeam(teamName);
+    const r = findOrCreateTeam(teamName, playerName);
     if (r.error) return reply(ack, { ok: false, error: r.error });
     const prev = game.teams.get(socket.data.teamId);
     if (prev) prev.members.delete(socket.id);

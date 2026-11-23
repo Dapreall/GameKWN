@@ -312,7 +312,8 @@
       img.src = PixelArt.avatarDataURL(t.color, 24);
       img.alt = "";
       li.appendChild(img);
-      li.appendChild(document.createTextNode(t.name + " - " + t.score + " poin"));
+      var displayName = (t.playerName || t.name) + " (" + t.name + ")";
+      li.appendChild(document.createTextNode(displayName + " - " + t.score + " poin"));
       list.appendChild(li);
     });
   }
@@ -460,7 +461,7 @@
         img.src = PixelArt.avatarDataURL(t.color, 72);
         img.alt = "";
         col.appendChild(img);
-        col.appendChild(el("p", "podium-name", t.name));
+        col.appendChild(el("p", "podium-name", (t.playerName || t.name) + " (" + t.name + ")"));
         col.appendChild(el("p", "podium-score", t.score + " poin"));
         var block = el("div", "podium-block podium-rank-" + rank);
         block.appendChild(el("span", "podium-medal", rank === 1 ? "1" : rank === 2 ? "2" : "3"));
@@ -478,7 +479,7 @@
         var img = el("img", "wlb-avatar pixel-img");
         img.src = PixelArt.avatarDataURL(t.color, 24);
         img.alt = "";
-        var name = el("span", "wlb-name", t.name);
+        var name = el("span", "wlb-name", (t.playerName || t.name) + " (" + t.name + ")");
         var score = el("span", "wlb-score", t.score + " poin");
         li.appendChild(rank);
         li.appendChild(img);
@@ -514,14 +515,14 @@
         var key = "team:" + t.id;
         activeTeam.push(key);
         var l = labelFor(key, "map-label map-label-team" + (t.locked ? " locked" : ""));
-        l.textContent = t.name + (t.locked ? " L" : "");
+        l.textContent = (t.playerName || t.name) + (t.locked ? " L" : "");
         l.style.setProperty("--tc", t.color);
         placeLabel(l, t.x, t.y - 46);
         if (s.roundKey === "rakit") {
           var bkey = "base:" + t.id;
           activeTeam.push(bkey);
           var bl = labelFor(bkey, "map-label map-label-base");
-          bl.textContent = t.name + " - " + t.pieces + "/9";
+          bl.textContent = (t.playerName || t.name) + " (" + t.name + ") - " + t.pieces + "/9";
           bl.style.setProperty("--tc", t.color);
           // Baris atas: label di bawah booth. Baris bawah: label di atas booth.
           var labelOffsetY = (t.spawnY > 400) ? -50 : 60;
