@@ -8,15 +8,60 @@
 // pulau besar Indonesia (Sumatera, Jawa, Kalimantan, Sulawesi, Papua) dan
 // empat simbol/pilar wawasan nusantara (Bendera, Pancasila, UUD 1945, Garuda).
 const PIECES = [
-  { id: "sumatera", label: "P. Sumatera", color: "#38a169", info: "Pulau terbesar di bagian barat Indonesia." },
-  { id: "jawa",     label: "P. Jawa",     color: "#d69e2e", info: "Pulau terpadat, pusat pemerintahan Indonesia." },
-  { id: "kalimantan", label: "P. Kalimantan", color: "#dd6b20", info: "Pulau terbesar di Indonesia." },
-  { id: "sulawesi", label: "P. Sulawesi", color: "#805ad5", info: "Pulau berbentuk huruf K di tengah Nusantara." },
-  { id: "papua",    label: "P. Papua",    color: "#3182ce", info: "Pulau paling timur Indonesia." },
-  { id: "bendera",  label: "Merah Putih", color: "#e53e3e", info: "Bendera Negara Kesatuan Republik Indonesia." },
-  { id: "pancasila", label: "Pancasila",  color: "#f6e05e", info: "Dasar ideologi Wawasan Nusantara." },
-  { id: "uud",      label: "UUD 1945",    color: "#ecc94b", info: "Landasan konstitusional (Pasal 25A: Negara Kepulauan)." },
-  { id: "garuda",   label: "Garuda",      color: "#f6ad55", info: "Lambang persatuan bangsa Indonesia." },
+  {
+    id: "sumatera",
+    label: "P. Sumatera",
+    color: "#38a169",
+    info: "Pulau terbesar di bagian barat Indonesia.",
+  },
+  {
+    id: "jawa",
+    label: "P. Jawa",
+    color: "#d69e2e",
+    info: "Pulau terpadat, pusat pemerintahan Indonesia.",
+  },
+  {
+    id: "kalimantan",
+    label: "P. Kalimantan",
+    color: "#dd6b20",
+    info: "Pulau terbesar di Indonesia.",
+  },
+  {
+    id: "sulawesi",
+    label: "P. Sulawesi",
+    color: "#805ad5",
+    info: "Pulau berbentuk huruf K di tengah Nusantara.",
+  },
+  {
+    id: "papua",
+    label: "P. Papua",
+    color: "#3182ce",
+    info: "Pulau paling timur Indonesia.",
+  },
+  {
+    id: "bendera",
+    label: "Merah Putih",
+    color: "#e53e3e",
+    info: "Bendera Negara Kesatuan Republik Indonesia.",
+  },
+  {
+    id: "pancasila",
+    label: "Pancasila",
+    color: "#f6e05e",
+    info: "Dasar ideologi Wawasan Nusantara.",
+  },
+  {
+    id: "uud",
+    label: "UUD 1945",
+    color: "#ecc94b",
+    info: "Landasan konstitusional (Pasal 25A: Negara Kepulauan).",
+  },
+  {
+    id: "garuda",
+    label: "Garuda",
+    color: "#f6ad55",
+    info: "Lambang persatuan bangsa Indonesia.",
+  },
 ];
 
 // Jumlah potongan yang beredar di peta sekaligus. Dibuat lebih besar dari
@@ -24,38 +69,109 @@ const PIECES = [
 // muncul satu kali di peta (dijamin di server.js).
 const POOL_SIZE = 14;
 
-// Ronde 2: zona jawaban. Empat aspek Pancagatra dari Wawasan Nusantara.
-// Warna sengaja dipilih yang kontras tinggi vs rumput/pasir/air (hindari
-// hijau & kuning yang nyaru sama tile map).
+// Ronde 2: zona jawaban. LIMA aspek IPOLEKSOSBUD-HANKAM — perwujudan kesatuan
+// Wawasan Nusantara. Di Buku KWN juga disebut 5 aspek Pancagatra (Ketahanan
+// Nasional). Ditata pentagon biar jarak merata. Warna kontras tinggi vs
+// rumput/pasir (hindari hijau & kuning yang nyaru sama tile map).
 const PASAL_ZONES = [
-  { code: "A", label: "Politik",        x: 600, y: 215, r: 90, color: "#ff3860" }, // merah muda terang
-  { code: "B", label: "Ekonomi",        x: 795, y: 400, r: 90, color: "#ff7f11" }, // oranye neon
-  { code: "C", label: "Sosial Budaya",  x: 600, y: 585, r: 90, color: "#d946ef" }, // magenta
-  { code: "D", label: "Hankam",         x: 405, y: 400, r: 90, color: "#06aed5" }, // cyan terang
+  { code: "E", label: "Ideologi",      x: 600, y: 200, r: 90, color: "#a855f7" }, // ungu terang (TOP)
+  { code: "A", label: "Politik",       x: 790, y: 320, r: 90, color: "#ff3860" }, // merah muda (kanan atas)
+  { code: "B", label: "Ekonomi",       x: 735, y: 590, r: 90, color: "#ff7f11" }, // oranye neon (kanan bawah)
+  { code: "C", label: "Sosial Budaya", x: 465, y: 590, r: 90, color: "#d946ef" }, // magenta (kiri bawah)
+  { code: "D", label: "Hankam",        x: 410, y: 320, r: 90, color: "#06aed5" }, // cyan (kiri atas)
 ];
 
 const PASAL_QUESTIONS = [
-  { text: "Pemilihan Umum dan sistem pemerintahan presidensial merupakan perwujudan Wawasan Nusantara di aspek?", answer: "A" },
-  { text: "Perdagangan antarpulau, APBN, dan hilirisasi nikel termasuk perwujudan Wawasan Nusantara di aspek?", answer: "B" },
-  { text: "Pelestarian bahasa daerah dan toleransi antarumat beragama termasuk aspek Pancagatra?", answer: "C" },
-  { text: "Patroli TNI AL menjaga kedaulatan di Laut Natuna Utara masuk aspek?", answer: "D" },
-  { text: "Pengakuan Bahasa Indonesia sebagai bahasa persatuan termasuk aspek?", answer: "C" },
-  { text: "Pancasila sebagai satu-satunya ideologi negara mencerminkan kesatuan aspek?", answer: "A" },
-  { text: "Program Tol Laut untuk pemerataan harga antarpulau adalah perwujudan aspek?", answer: "B" },
-  { text: "Wajib bela negara dan Komcad (Komponen Cadangan) termasuk aspek?", answer: "D" },
-  { text: "Festival budaya Papua dan pengakuan masyarakat adat termasuk aspek?", answer: "C" },
-  { text: "Diplomasi bebas aktif Indonesia di PBB dan ASEAN termasuk aspek?", answer: "A" },
-  { text: "Satu kesatuan ekonomi di seluruh Nusantara menuntut pemerataan di aspek?", answer: "B" },
-  { text: "Pos pengamanan perbatasan di Pulau Miangas dan Rondo adalah bentuk aspek?", answer: "D" },
+  {
+    text: "Pemilihan Umum dan sistem pemerintahan presidensial merupakan perwujudan Wawasan Nusantara di aspek?",
+    answer: "A",
+  },
+  {
+    text: "Perdagangan antarpulau, APBN, dan hilirisasi nikel termasuk perwujudan Wawasan Nusantara di aspek?",
+    answer: "B",
+  },
+  {
+    text: "Pelestarian bahasa daerah dan kesenian tradisional antar provinsi termasuk aspek?",
+    answer: "C",
+  },
+  {
+    text: "Patroli TNI AL menjaga kedaulatan di Laut Natuna Utara masuk aspek?",
+    answer: "D",
+  },
+  {
+    text: "Pengakuan Bahasa Indonesia sebagai bahasa persatuan termasuk aspek?",
+    answer: "C",
+  },
+  {
+    text: "Pancasila sebagai satu-satunya ideologi negara mencerminkan kesatuan aspek?",
+    answer: "E",
+  },
+  {
+    text: "Program Tol Laut untuk pemerataan harga antarpulau adalah perwujudan aspek?",
+    answer: "B",
+  },
+  {
+    text: "Wajib bela negara dan Komcad (Komponen Cadangan) termasuk aspek?",
+    answer: "D",
+  },
+  {
+    text: "Festival budaya Papua dan pengakuan masyarakat adat termasuk aspek?",
+    answer: "C",
+  },
+  {
+    text: "Diplomasi bebas aktif Indonesia di PBB dan ASEAN termasuk aspek?",
+    answer: "A",
+  },
+  {
+    text: "Satu kesatuan ekonomi di seluruh Nusantara menuntut pemerataan di aspek?",
+    answer: "B",
+  },
+  {
+    text: "Pos pengamanan perbatasan di Pulau Miangas dan Rondo adalah bentuk aspek?",
+    answer: "D",
+  },
+  {
+    text: "Nilai-nilai Pancasila sebagai sumber dari segala sumber hukum di Indonesia mencerminkan aspek?",
+    answer: "E",
+  },
+  {
+    text: "Penangkalan paham radikalisme dan upaya mempertahankan Pancasila dari ideologi asing termasuk aspek?",
+    answer: "E",
+  },
+  {
+    text: "Pengamalan sila Ketuhanan Yang Maha Esa dan toleransi antarumat beragama di seluruh Nusantara termasuk aspek?",
+    answer: "E",
+  },
+  {
+    text: "Pendidikan karakter berbasis nilai Pancasila di sekolah-sekolah adalah penguatan aspek?",
+    answer: "E",
+  },
 ];
 const PASAL_COUNT = 10;
 
-// Ronde 3: dua zona klasifikasi astagatra.
-// Trigatra = aspek alamiah (geografi, demografi, sumber kekayaan alam).
-// Pancagatra = aspek sosial (ideologi, politik, ekonomi, sosbud, hankam).
+// Ronde 3: dua zona klasifikasi ASTAGATRA (kerangka Ketahanan Nasional
+// di Buku KWN hal. 261). Astagatra = 8 unsur ketahanan bangsa, terdiri dari:
+//   Trigatra  = aspek alamiah: geografi, demografi/penduduk, sumber kekayaan alam
+//   Pancagatra = aspek sosial: ideologi, politik, ekonomi, sosbud, hankam
+// Note: konsep ini erat kaitannya dengan Wawasan Nusantara karena 5 aspek
+// Pancagatra adalah perwujudan kesatuan Wawasan Nusantara.
 const PILAH_ZONES = [
-  { code: "trigatra",  label: "Trigatra (Alamiah)", x: 405, y: 400, r: 115, color: "#22c1c3" }, // teal terang
-  { code: "pancagatra", label: "Pancagatra (Sosial)", x: 795, y: 400, r: 115, color: "#ff4081" }, // pink terang
+  {
+    code: "trigatra",
+    label: "Trigatra",
+    x: 405,
+    y: 400,
+    r: 115,
+    color: "#22c1c3",
+  }, // teal terang
+  {
+    code: "pancagatra",
+    label: "Pancagatra",
+    x: 795,
+    y: 400,
+    r: 115,
+    color: "#ff4081",
+  }, // pink terang
 ];
 
 const PILAH_CARDS = [

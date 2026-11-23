@@ -28,9 +28,9 @@ const ROUND_DEFS = [
   { key: "rakit", title: "Rakit Nusantara", seconds: 240,
     desc: "Kumpulkan 9 potongan Peta Nusantara: 5 pulau besar + Bendera, Pancasila, UUD 1945, Garuda. Dekati potongan lalu tekan Ambil. Bawa ke pangkalan tim (lingkaran titik). Salah ambil? Tekan Buang. Tiap jenis potongan yang terpasang: +10 poin." },
   { key: "pasal", title: "Jelajah Wawasan", seconds: 260,
-    desc: "10 soal tentang 4 aspek Pancagatra: Politik, Ekonomi, Sosial Budaya, Hankam. Lari ke zona yang kamu rasa benar, tekan Kunci. Setelah lock, karakter tidak bisa gerak. Semua tim lock atau waktu habis -> jawaban benar muncul. Benar pertama +20, berikutnya +10, salah -5." },
+    desc: "10 soal tentang 5 aspek kesatuan Wawasan Nusantara (IPOLEKSOSBUD-HANKAM): Ideologi, Politik, Ekonomi, Sosial Budaya, Hankam. Lari ke zona yang kamu rasa benar, tekan Kunci. Setelah lock, karakter tidak bisa gerak. Semua tim lock atau waktu habis -> jawaban benar muncul. Benar pertama +20, berikutnya +10, salah -5." },
   { key: "pilah", title: "Pilah Astagatra", seconds: 180,
-    desc: "12 kartu pernyataan: masukkan ke Trigatra (alamiah: geografi, demografi, SKA) atau Pancagatra (sosial: ideologi, politik, ekonomi, sosbud, hankam). Posisi zona BERGERAK tiap kartu! Lock cepat, poin lebih tinggi. Benar: +20, +15, +10, +8, +5 (menurun). Salah: -5 tetap." },
+    desc: "12 kartu pernyataan dari konsep Ketahanan Nasional. Pilah ke zona TRIGATRA (aspek alamiah: geografi, demografi, SKA) atau PANCAGATRA (aspek sosial: ideologi, politik, ekonomi, sosbud, hankam). Posisi zona BERGERAK tiap kartu! Lock cepat, poin lebih tinggi. Benar: +20, +15, +10, +8, +5 (menurun). Salah: -5 tetap." },
 ];
 function pickMap() { return DATA.MAP_PRESETS[Math.floor(Math.random() * DATA.MAP_PRESETS.length)]; }
 
