@@ -1996,3 +1996,30 @@ body.display .layout { min-height: calc(100vh - 32px); }
 @media (orientation: landscape) and (max-height: 540px) {
   .landscape-question:not([hidden]) { display: block !important; }
 }
+
+/* ---------- Winner "Mulai Sesi Baru" button ---------- */
+.winner-actions {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 2px dashed var(--line);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.btn.new-session-btn {
+  font-size: 16px;
+  padding: 18px 36px;
+  background: var(--good);
+  color: #0a2317;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.4),
+    inset -3px -3px 0 #2f8f54,
+    0 4px 0 var(--bg-deep);
+  animation: startPulse 2.2s ease-in-out infinite;
+  letter-spacing: 0.06em;
+}
+.btn.new-session-btn:hover { filter: brightness(1.05); }
+.btn.new-session-btn:active { transform: translateY(2px); }
+.winner-actions .muted { max-width: 360px; text-align: center; }

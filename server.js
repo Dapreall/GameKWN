@@ -16,7 +16,7 @@ const SPAWN_R = 290, SPEED = 170, PICK_R = 36, BASE_R = 80, TICK_MS = 50;
 const BETWEEN_SECONDS = 8, RAKIT_RESPAWN_MS = 4000;
 const PASAL_Q_TIME = 20, PASAL_HOLD = 3, PASAL_REVEAL = 5, PASAL_GAP = 2;
 const PILAH_CARD_TIME = 12, PILAH_GAP = 2, PILAH_RESULT_TIME = 3;
-const PILAH_ZONE_R = 110;
+const PILAH_ZONE_R = 85;
 const TEAM_R = 14, WATER_SPEED_MULT = 0.45, PIECE_CLEAR_R = 36, OBSTACLE_PAD = 8;
 
 const PALETTE = [
@@ -39,7 +39,7 @@ for (let i = 0; i < MAX_TEAMS; i++) {
 }
 function pickMap() { return DATA.MAP_PRESETS[Math.floor(Math.random() * DATA.MAP_PRESETS.length)]; }
 const game = {
-  phase: "lobby",   // lobby | preround | playing | between | finished
+  phase: "lobby",
   roundIndex: -1,
   roundLeft: 0,
   betweenLeft: 0,
@@ -127,31 +127,60 @@ function randomSpot(existingPieces) {
   return { x: CENTER.x, y: CENTER.y + 220 };
 }
 
-// Spot acak untuk zona Pilah: cari dua titik yang jaraknya cukup jauh satu sama lain.
+// Spot acak untuk zona Pilah. Punya 2 lapisan: strict (jarak optimal) -> relaxed
+// (jarak minimum) -> fallback pool random. Tujuannya biar zona benar-benar pindah
+// tiap kartu dan gak overlap antar zona atau nabrak pangkalan.
 function randomZoneSpot(avoid) {
   avoid = avoid || [];
-  for (let tries = 0; tries < 300; tries++) {
-    const x = PILAH_ZONE_R + 40 + Math.random() * (W - 2 * PILAH_ZONE_R - 80);
-    const y = PILAH_ZONE_R + 40 + Math.random() * (H - 2 * PILAH_ZONE_R - 80);
-    // Jauh dari rocks dan air
-    let bad = false;
+  const margin = PILAH_ZONE_R + 15;
+
+  function okAt(x, y, minSpawnDist, minZoneDist) {
+    if (x < margin || x > W - margin || y < margin || y > H - margin) return false;
     for (const o of game.map.rocks) {
-      if (Math.hypot(x - o.x, y - o.y) < o.r + PILAH_ZONE_R + 20) { bad = true; break; }
+      if (Math.hypot(x - o.x, y - o.y) < o.r + PILAH_ZONE_R + 10) return false;
     }
-    if (bad) continue;
-    // Jauh dari spawn points
-    const jauhSpawn = SPAWN_POINTS.every((sp) => Math.hypot(sp.x - x, sp.y - y) > PILAH_ZONE_R + 90);
-    if (!jauhSpawn) continue;
-    // Jauh dari zona lain yang sudah ada
-    let tooClose = false;
+    let minSp = Infinity;
+    for (const sp of SPAWN_POINTS) {
+      const d = Math.hypot(sp.x - x, sp.y - y);
+      if (d < minSp) minSp = d;
+    }
+    if (minSp < minSpawnDist) return false;
     for (const other of avoid) {
-      if (Math.hypot(other.x - x, other.y - y) < PILAH_ZONE_R * 2 + 60) { tooClose = true; break; }
+      if (Math.hypot(other.x - x, other.y - y) < minZoneDist) return false;
     }
-    if (tooClose) continue;
-    return { x, y };
+    return true;
   }
-  // Fallback: posisi default
-  return avoid.length === 0 ? { x: 405, y: 400 } : { x: 795, y: 400 };
+
+  // Lapisan 1: strict (jauh dari spawn & jauh antar zona)
+  for (let tries = 0; tries < 400; tries++) {
+    const x = margin + Math.random() * (W - 2 * margin);
+    const y = margin + Math.random() * (H - 2 * margin);
+    if (okAt(x, y, PILAH_ZONE_R + 95, PILAH_ZONE_R * 2 + 40)) return { x, y };
+  }
+  // Lapisan 2: relaxed
+  for (let tries = 0; tries < 400; tries++) {
+    const x = margin + Math.random() * (W - 2 * margin);
+    const y = margin + Math.random() * (H - 2 * margin);
+    if (okAt(x, y, PILAH_ZONE_R + 50, PILAH_ZONE_R * 2 + 20)) return { x, y };
+  }
+  // Fallback pool - 12 titik tersebar, dipilih random urutannya
+  const pool = [
+    { x: 220, y: 200 }, { x: 980, y: 200 },
+    { x: 220, y: 600 }, { x: 980, y: 600 },
+    { x: 170, y: 400 }, { x: 1030, y: 400 },
+    { x: 600, y: 170 }, { x: 600, y: 630 },
+    { x: 400, y: 220 }, { x: 800, y: 220 },
+    { x: 400, y: 580 }, { x: 800, y: 580 },
+  ];
+  const shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+  for (const p of shuffled) {
+    let ok = true;
+    for (const other of avoid) {
+      if (Math.hypot(other.x - p.x, other.y - p.y) < PILAH_ZONE_R * 2 + 10) { ok = false; break; }
+    }
+    if (ok) return p;
+  }
+  return avoid.length === 0 ? { x: 220, y: 400 } : { x: 980, y: 400 };
 }
 
 function findOrCreateTeam(name) {
@@ -381,7 +410,6 @@ function makePilah() {
   let holdLeft = 0;
   let cur = null;
   let finished = false;
-  // Zona Pilah dinamis - regenerate tiap kartu baru
   let currentZones = [];
 
   function generateZones() {
@@ -399,14 +427,11 @@ function makePilah() {
     return null;
   }
 
-  // Skor menurun: +20 benar pertama, trs -3 tiap urutan berikutnya,
-  // floor di +5. Salah: -5 tetap (tidak akumulatif).
   function calcPoints(ok, correctCountBefore) {
     if (!ok) return -5;
     const pts = 20 - 3 * correctCountBefore;
     return Math.max(5, pts);
   }
-
   function countCorrectBefore() {
     if (!cur) return 0;
     let n = 0;
@@ -444,7 +469,6 @@ function makePilah() {
     idx += 1;
     cur = { card: deck[idx], results: {} };
     stage = "answer"; timeLeft = PILAH_CARD_TIME;
-    // REGENERATE zona untuk kartu baru - posisi berpindah!
     currentZones = generateZones();
     for (const t of game.teams.values()) { t.locked = false; t.lockedZone = null; }
   }
@@ -532,7 +556,6 @@ function startPreround(i) {
   game.roundLeft = 0;
   game.betweenLeft = 0;
 }
-
 function startPlaying() {
   if (game.roundIndex < 0 || game.roundIndex >= ROUND_DEFS.length) return;
   const def = ROUND_DEFS[game.roundIndex];
@@ -541,7 +564,6 @@ function startPlaying() {
   game.round = ROUND_MAKERS[def.key]();
   game.round.init();
 }
-
 function endRound() {
   if (game.round) game.round.end();
   game.round = null;
@@ -550,11 +572,9 @@ function endRound() {
     game.phase = "finished";
     game.betweenLeft = 0;
   } else {
-    // Langsung ke preround ronde berikutnya, nunggu host klik Mulai
     startPreround(game.roundIndex + 1);
   }
 }
-
 function resetGame() {
   game.phase = "lobby";
   game.roundIndex = -1;
@@ -575,10 +595,8 @@ function snapshot() {
   const nextDef = (game.phase === "between" || game.phase === "preround") && game.roundIndex < ROUND_DEFS.length - 1 ? ROUND_DEFS[game.roundIndex] : null;
   const roundKey = def ? def.key : null;
   const stage = round ? round.snapshot() : null;
-
   const hideTeamsOnDisplay =
     roundKey === "pasal" && stage && (stage.stage === "answer" || stage.stage === "hold");
-
   const teamData = teams.map((t) => ({
     id: t.id, name: t.name, color: t.color,
     x: Math.round(t.x), y: Math.round(t.y),
@@ -589,7 +607,6 @@ function snapshot() {
     members: t.members.size,
     locked: !!t.locked, lockedZone: t.lockedZone || null,
   }));
-
   return {
     phase: game.phase,
     roundIndex: game.roundIndex,
@@ -698,7 +715,6 @@ io.on("connection", (socket) => {
     else reply(ack, { ok: false, error: "PIN salah." });
   });
 
-  // host:start = masuk preround ronde 0 (dari lobby)
   socket.on("host:start", (ack) => {
     if (!needHost(ack)) return;
     if (game.phase !== "lobby") return reply(ack, { ok: false, error: "Permainan sudah berjalan." });
@@ -707,7 +723,6 @@ io.on("connection", (socket) => {
     reply(ack, { ok: true });
   });
 
-  // host:beginPlay = transisi dari preround -> playing
   socket.on("host:beginPlay", (ack) => {
     if (!needHost(ack)) return;
     if (game.phase !== "preround") return reply(ack, { ok: false, error: "Tidak dalam fase preround." });
@@ -750,7 +765,6 @@ setInterval(() => {
     game.betweenLeft -= dt;
     if (game.betweenLeft <= 0) startPreround(game.roundIndex + 1);
   }
-  // preround: TIDAK ada timer. Nunggu host klik "host:beginPlay"
 }, TICK_MS);
 
 setInterval(() => { io.emit("state", snapshot()); }, TICK_MS);

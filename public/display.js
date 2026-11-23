@@ -5,7 +5,6 @@
   var canvas = document.getElementById("map");
   var ctx = canvas.getContext("2d");
   var state = null;
-  var prevPhase = null;
   var prevRoundIndex = -1;
   var shown = {};
   var hostPin = null;
@@ -51,8 +50,6 @@
     });
   }
 
-  // PIN form: pakai submit handler (bukan button click) biar Enter cuma trigger auth,
-  // gak nyebar ke button lain.
   var loginForm = $("host-login-form");
   if (loginForm) {
     loginForm.addEventListener("submit", function (e) {
@@ -60,7 +57,6 @@
       authHost($("pin").value, function (res) {
         var m = $("host-msg"); if (m) m.textContent = res && res.ok ? "Kontrol host aktif." : (res && res.error) || "Gagal.";
       });
-      // Blur input biar focus tidak di PIN lagi (mencegah Enter berulang)
       try { $("pin").blur(); } catch (e) {}
     });
   }
@@ -72,13 +68,36 @@
       });
     };
   }
-  // btn-start sekarang masuk ke PREROUND (lobby -> preround[0])
   var sb = $("btn-start"); if (sb) sb.addEventListener("click", hostCmd("host:start", "host-msg"));
-  // btn-begin: preround -> playing (tombol di preround screen)
   var bg2 = $("btn-begin"); if (bg2) bg2.addEventListener("click", hostCmd("host:beginPlay", "host-msg-2"));
   var skb = $("btn-skip"); if (skb) skb.addEventListener("click", hostCmd("host:skip", "host-msg-2"));
   var rb = $("btn-reset"); if (rb) rb.addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset", "host-msg")(); });
   var rb2 = $("btn-reset-2"); if (rb2) rb2.addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset", "host-msg-2")(); });
+  var nsb = $("btn-new-session");
+  if (nsb) nsb.addEventListener("click", function () {
+    function doReset() {
+      if (!window.confirm("Mulai sesi baru? Semua tim & skor akan direset dan pemain harus join ulang.")) return;
+      socket.emit("host:reset", function (res) {
+        var note = $("winner-note");
+        if (res && res.ok) {
+          if (note) note.textContent = "Sesi direset. Pemain akan kembali ke halaman join.";
+        } else {
+          if (note) note.textContent = (res && res.error) || "Gagal reset. Coba masukkan PIN lagi.";
+        }
+      });
+    }
+    if (hostOk) { doReset(); return; }
+    var pin = window.prompt("Masukkan PIN host untuk mulai sesi baru:");
+    if (pin == null) return;
+    authHost(String(pin), function (res) {
+      if (res && res.ok) {
+        doReset();
+      } else {
+        var note = $("winner-note");
+        if (note) note.textContent = (res && res.error) || "PIN salah.";
+      }
+    });
+  });
 
   socket.on("connect", function () { if (hostPin) authHost(hostPin); });
 
@@ -103,7 +122,6 @@
   function handlePhaseTransition(s) {
     var isNewRound = s.phase === "playing" && s.roundIndex !== prevRoundIndex;
     if (isNewRound) showRoundIntro(s);
-    prevPhase = s.phase;
     prevRoundIndex = s.roundIndex;
   }
 
@@ -126,7 +144,6 @@
     }, 3000);
   }
 
-  // Switch layout berdasarkan phase: lobby | preround | playing/between | finished
   function renderPhaseLayout(s) {
     var lobby = $("lobby-screen");
     var preround = $("preround-screen");
@@ -135,11 +152,17 @@
     var isLobby = s.phase === "lobby";
     var isPreround = s.phase === "preround";
     var isGame = s.phase === "playing" || s.phase === "between" || s.phase === "finished";
-
+    var isFinished = s.phase === "finished";
     if (lobby) lobby.hidden = !isLobby;
     if (preround) preround.hidden = !isPreround;
     if (game) game.hidden = !isGame;
     if (below) below.hidden = !isGame;
+    // Saat finished, sembunyikan seluruh kartu Host di sidebar. Cukup pakai
+    // tombol MULAI SESI BARU di winner screen untuk kontrol akhir.
+    var hostSide = $("host");
+    if (hostSide) hostSide.style.display = isFinished ? "none" : "";
+    var skb = $("btn-skip"); if (skb) skb.style.display = isFinished ? "none" : "";
+    var rb2 = $("btn-reset-2"); if (rb2) rb2.style.display = isFinished ? "none" : "";
   }
 
   function renderPreround(s) {
@@ -195,7 +218,6 @@
     box.textContent = "";
     var st = s.stage;
     if (!st || s.phase !== "playing") return;
-
     if (st.kind === "pasal") {
       box.appendChild(el("p", "stage-line", "Soal " + st.questionNo + " dari " + st.total));
       if (st.stage === "answer") box.appendChild(el("p", "stage-line", "Waktu menjawab: " + st.timeLeft + " dtk"));
@@ -439,7 +461,6 @@
         l.textContent = t.name + (t.locked ? " L" : "");
         l.style.setProperty("--tc", t.color);
         placeLabel(l, t.x, t.y - 46);
-
         if (s.roundKey === "rakit") {
           var bkey = "base:" + t.id;
           activeTeam.push(bkey);
@@ -476,12 +497,10 @@
   function draw() {
     ctx.drawImage(bg, 0, 0);
     if (!state) return;
-
     ((state.map && state.map.rocks) || []).forEach(function (ob, idx) {
       var p = toLow(ob.x, ob.y);
       PixelArt.drawObstacle(ctx, p[0], p[1], ob.r / SCALE_DOWN, idx);
     });
-
     var now = performance.now();
     (state.zones || []).forEach(function (z) {
       var p = toLow(z.x, z.y);
@@ -497,7 +516,6 @@
         ctx.stroke();
       }
     });
-
     var showBases = state.roundKey === "rakit";
     if (showBases) {
       state.teams.forEach(function (t) {
@@ -506,13 +524,11 @@
         PixelArt.drawFlag(ctx, p[0] - 10, p[1], t.color, 1);
       });
     }
-
     (state.pieces || []).forEach(function (pc) {
       var p = toLow(pc.x, pc.y);
       var def = pieceDef(pc.type);
       PixelArt.drawPieceIcon(ctx, p[0], p[1], pc.type, def ? def.color : "#cccccc", 1.1);
     });
-
     var hideTeams = !!state.hideTeamsOnDisplay;
     if (!hideTeams) {
       state.teams.forEach(function (t) {
@@ -539,7 +555,6 @@
         }
       });
     }
-
     var ids = state.teams.map(function (t) { return t.id; });
     Object.keys(shown).forEach(function (id) { if (ids.indexOf(id) === -1) delete shown[id]; });
   }
