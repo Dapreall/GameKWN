@@ -117,7 +117,60 @@
     renderPreround(s);
     renderBetweenIntro(s);
     renderWinnerScreen(s);
+    syncAudioToState(s);
   });
+
+  // ---------------- AUDIO ----------------
+  var prevPhase = null, prevRoundKey = null, prevStageStage = null, prevStageAnswer = null;
+  var prevTeamCount = 0;
+  function syncAudioToState(s) {
+    if (!window.GameAudio) return;
+    var key;
+    if (s.phase === "lobby") key = "lobby";
+    else if (s.phase === "preround") key = "preround";
+    else if (s.phase === "between") key = "between";
+    else if (s.phase === "finished") key = "finished";
+    else if (s.phase === "playing") {
+      key = s.roundKey === "rakit" ? "rakit" : s.roundKey === "pasal" ? "pasal" : s.roundKey === "pilah" ? "pilah" : "lobby";
+    } else key = "lobby";
+    GameAudio.setPhase(key);
+
+    // SFX hooks berdasarkan transisi state
+    if (s.phase === "lobby" && (s.teams || []).length > prevTeamCount) GameAudio.sfx("join");
+    prevTeamCount = (s.teams || []).length;
+
+    if (prevPhase !== s.phase) {
+      if (s.phase === "playing" && prevPhase === "preround") GameAudio.sfx("start");
+      if (s.phase === "finished") GameAudio.sfx("win");
+    }
+    var st = s.stage;
+    if (st && st.stage === "reveal" && (prevStageStage !== "reveal" || prevStageAnswer !== st.answer)) {
+      GameAudio.sfx("reveal");
+    }
+    prevPhase = s.phase;
+    prevRoundKey = s.roundKey;
+    prevStageStage = st ? st.stage : null;
+    prevStageAnswer = st ? st.answer : null;
+  }
+
+  // Mute button wiring
+  var muteBtn = $("mute-toggle");
+  function updateMuteIcon() {
+    if (!muteBtn) return;
+    var icon = $("mute-icon");
+    var m = window.GameAudio && GameAudio.isMuted();
+    if (icon) icon.innerHTML = m ? "&#x1F507;" : "&#x1F50A;";
+    muteBtn.classList.toggle("muted", !!m);
+  }
+  if (muteBtn) {
+    muteBtn.addEventListener("click", function () {
+      if (!window.GameAudio) return;
+      GameAudio.init();
+      GameAudio.toggleMute();
+      updateMuteIcon();
+    });
+    updateMuteIcon();
+  }
 
   function handlePhaseTransition(s) {
     var isNewRound = s.phase === "playing" && s.roundIndex !== prevRoundIndex;
@@ -161,8 +214,8 @@
     // tombol MULAI SESI BARU di winner screen untuk kontrol akhir.
     var hostSide = $("host");
     if (hostSide) hostSide.style.display = isFinished ? "none" : "";
-    var skb = $("btn-skip"); if (skb) skb.style.display = isFinished ? "none" : "";
-    var rb2 = $("btn-reset-2"); if (rb2) rb2.style.display = isFinished ? "none" : "";
+    var skipBtn = $("btn-skip"); if (skipBtn) skipBtn.style.display = isFinished ? "none" : "";
+    var resetBtn2 = $("btn-reset-2"); if (resetBtn2) resetBtn2.style.display = isFinished ? "none" : "";
   }
 
   function renderPreround(s) {
@@ -204,6 +257,9 @@
     renderRanking(s);
     renderUrls(s);
     var tc = $("team-count"); if (tc) tc.textContent = s.teams.length + " dari 15 tim sudah masuk";
+    // Contekan Astagatra hanya muncul saat ronde Pilah
+    var cheat = $("display-cheat");
+    if (cheat) cheat.hidden = !(s.phase === "playing" && s.roundKey === "pilah");
   }
 
   function zoneLabel(code, s) {
@@ -530,10 +586,24 @@
     if (showBases) {
       state.teams.forEach(function (t) {
         var p = toLow(t.spawnX, t.spawnY);
-        // Lingkaran drop-zone tipis supaya tim tau radius pangkalan
-        PixelArt.dashedRing(ctx, p[0], p[1], 80 / SCALE_DOWN, t.color, 20);
-        // Booth/pangkalan itu sendiri (ukuran lebih besar sedikit supaya keliatan)
-        PixelArt.drawBooth(ctx, p[0], p[1] - 2, t.color, 0.9);
+        var zr = 80 / SCALE_DOWN;
+        PixelArt.ditherCircle(ctx, p[0], p[1], zr, t.color);
+        ctx.strokeStyle = "rgba(0,0,0,0.85)";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(p[0], p[1], zr + 0.8, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = t.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(p[0], p[1], zr - 0.5, 0, Math.PI * 2); ctx.stroke();
+        PixelArt.dashedRing(ctx, p[0], p[1], zr - 2, "#ffffff", 20);
+        if (t.carryType) {
+          var pulse = ((now / 500) % 1);
+          ctx.strokeStyle = "#ffd54d";
+          ctx.lineWidth = 0.8;
+          ctx.globalAlpha = 1 - pulse;
+          ctx.beginPath(); ctx.arc(p[0], p[1], zr + 1 + pulse * 3, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        PixelArt.drawBooth(ctx, p[0], p[1] - 2, t.color, 0.95);
       });
     }
     (state.pieces || []).forEach(function (pc) {

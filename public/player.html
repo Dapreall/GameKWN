@@ -99,14 +99,44 @@
       <div class="lhud-score">Skor <b id="my-score-l">0</b></div>
     </div>
 
+    <!-- Contekan Astagatra: ditampilkan khusus di ronde Pilah -->
+    <section id="cheat-pilah" class="card cheat-card portrait-only" hidden>
+      <p class="label">Contekan Astagatra</p>
+      <div class="cheat-grid">
+        <div class="cheat-col cheat-trigatra">
+          <p class="cheat-head">Trigatra (Alamiah)</p>
+          <ul class="cheat-list">
+            <li>Geografi</li>
+            <li>Kekayaan Alam</li>
+            <li>Kependudukan</li>
+          </ul>
+        </div>
+        <div class="cheat-col cheat-pancagatra">
+          <p class="cheat-head">Pancagatra (Sosial)</p>
+          <ul class="cheat-list">
+            <li>Ideologi</li>
+            <li>Politik</li>
+            <li>Ekonomi</li>
+            <li>Sosial Budaya</li>
+            <li>Hankam</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <section class="card portrait-only">
       <p class="label">Papan skor</p>
       <ol id="ranking" class="ranking"></ol>
     </section>
   </section>
 
+  <button id="mute-toggle" class="mute-toggle" type="button" aria-label="Toggle suara">
+    <span id="mute-icon">&#x1F50A;</span>
+  </button>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="pixelart.js"></script>
+  <script src="audio.js"></script>
   <script src="player.js"></script>
 </body>
 </html>

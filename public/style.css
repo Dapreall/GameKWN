@@ -3,6 +3,34 @@
 
 [hidden] { display: none !important; }
 
+/* ---------- Floating mute toggle (musik + SFX) ---------- */
+.mute-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 100;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #163c4f;
+  color: #ffcf5c;
+  border: 2px solid #0a2330;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    inset -2px -2px 0 #0a2330,
+    0 2px 0 #0a1f2b;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+.mute-toggle:active { transform: translateY(1px); }
+.mute-toggle.muted { color: #718096; opacity: 0.85; }
+.mute-toggle:focus-visible { outline: 3px solid #ffcf5c; outline-offset: 2px; }
+
+
 * { box-sizing: border-box; }
 
 :root {
@@ -310,6 +338,28 @@ body.in-game .controls { display: flex; }
 
 .options { display: grid; gap: 8px; }
 .options .btn { width: 100%; text-align: left; background: var(--card); color: var(--fg); box-shadow: inset 0 0 0 3px var(--line); font-family: "VT323", monospace; font-size: 17px; padding: 10px 14px; }
+
+/* ---------- Cheat sheet Astagatra (ronde Pilah) ---------- */
+.cheat-card { background: linear-gradient(180deg, var(--card), var(--bg-deep)); border-color: var(--gold); }
+.cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.cheat-col {
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  background: rgba(10, 20, 26, 0.55);
+}
+.cheat-trigatra { border-color: #22c1c3; box-shadow: inset 0 0 0 1px rgba(34, 193, 195, 0.4); }
+.cheat-pancagatra { border-color: #ff4081; box-shadow: inset 0 0 0 1px rgba(255, 64, 129, 0.4); }
+.cheat-head {
+  margin: 0 0 6px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-shadow: 1px 1px 0 var(--bg-deep);
+}
+.cheat-trigatra .cheat-head { color: #22c1c3; }
+.cheat-pancagatra .cheat-head { color: #ff4081; }
+.cheat-list { margin: 0; padding-left: 16px; font-size: 15px; line-height: 1.35; color: var(--fg); }
+.cheat-list li { margin: 2px 0; }
 
 .ranking { margin: 0; padding-left: 4px; list-style: none; }
 .ranking li { padding: 4px 0; display: flex; align-items: center; gap: 2px; font-size: 16px; }

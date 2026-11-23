@@ -208,6 +208,31 @@
         <div id="stage-extra"></div>
       </div>
 
+      <!-- Contekan Astagatra: muncul saat ronde Pilah -->
+      <div class="card cheat-card" id="display-cheat" hidden>
+        <p class="label">Contekan Astagatra</p>
+        <div class="cheat-grid">
+          <div class="cheat-col cheat-trigatra">
+            <p class="cheat-head">Trigatra (Alamiah)</p>
+            <ul class="cheat-list">
+              <li>Geografi</li>
+              <li>Kekayaan Alam</li>
+              <li>Kependudukan</li>
+            </ul>
+          </div>
+          <div class="cheat-col cheat-pancagatra">
+            <p class="cheat-head">Pancagatra (Sosial)</p>
+            <ul class="cheat-list">
+              <li>Ideologi</li>
+              <li>Politik</li>
+              <li>Ekonomi</li>
+              <li>Sosial Budaya</li>
+              <li>Hankam</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <div class="card join-card">
         <p class="label">Gabung Game</p>
         <div class="join-grid">
@@ -228,9 +253,15 @@
       </div>
     </section>
 
+    <!-- Floating mute toggle (musik + sfx) -->
+    <button id="mute-toggle" class="mute-toggle" type="button" aria-label="Toggle suara">
+      <span id="mute-icon">&#x1F50A;</span>
+    </button>
+
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="pixelart.js"></script>
+    <script src="audio.js"></script>
     <script src="display.js"></script>
   </body>
 </html>
