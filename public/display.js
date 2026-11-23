@@ -5,6 +5,7 @@
   var canvas = document.getElementById("map");
   var ctx = canvas.getContext("2d");
   var state = null;
+  var prevPhase = null;
   var prevRoundIndex = -1;
   var shown = {};
   var hostPin = null;
@@ -35,17 +36,10 @@
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function fmt(sec) { var m = Math.floor(sec / 60); var s = sec % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
 
-  var ROUND_INFO = {
-    rakit: { desc: "Kumpulkan 9 potongan Peta Nusantara. Bawa ke pangkalan tim!" },
-    pasal: { desc: "Jelajah 4 aspek Pancagatra: Politik, Ekonomi, Sosial Budaya, Hankam." },
-    pilah: { desc: "Pilah pernyataan ke Trigatra (alamiah) atau Pancagatra (sosial)." },
-  };
-
   function updateHostUI() {
     var loggedIn = hostOk;
-    var loginA = $("host-login"); if (loginA) loginA.hidden = loggedIn;
+    var loginForm = $("host-login-form"); if (loginForm) loginForm.hidden = loggedIn;
     var ctrlA = $("host-controls"); if (ctrlA) ctrlA.hidden = !loggedIn;
-    var loginB = $("host-login-2"); if (loginB) loginB.hidden = loggedIn;
     var ctrlB = $("host-controls-2"); if (ctrlB) ctrlB.hidden = !loggedIn;
   }
   function authHost(pin, cb) {
@@ -56,17 +50,20 @@
       updateHostUI();
     });
   }
-  function bindHostAuth(pinInputId, pinBtnId, msgId) {
-    var btn = $(pinBtnId);
-    if (!btn) return;
-    btn.addEventListener("click", function () {
-      authHost($(pinInputId).value, function (res) {
-        var m = $(msgId); if (m) m.textContent = res && res.ok ? "Kontrol host aktif." : (res && res.error) || "Gagal.";
+
+  // PIN form: pakai submit handler (bukan button click) biar Enter cuma trigger auth,
+  // gak nyebar ke button lain.
+  var loginForm = $("host-login-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      authHost($("pin").value, function (res) {
+        var m = $("host-msg"); if (m) m.textContent = res && res.ok ? "Kontrol host aktif." : (res && res.error) || "Gagal.";
       });
+      // Blur input biar focus tidak di PIN lagi (mencegah Enter berulang)
+      try { $("pin").blur(); } catch (e) {}
     });
   }
-  bindHostAuth("pin", "pin-btn", "host-msg");
-  bindHostAuth("pin2", "pin-btn-2", "host-msg-2");
 
   function hostCmd(name, msgId) {
     return function () {
@@ -75,7 +72,10 @@
       });
     };
   }
+  // btn-start sekarang masuk ke PREROUND (lobby -> preround[0])
   var sb = $("btn-start"); if (sb) sb.addEventListener("click", hostCmd("host:start", "host-msg"));
+  // btn-begin: preround -> playing (tombol di preround screen)
+  var bg2 = $("btn-begin"); if (bg2) bg2.addEventListener("click", hostCmd("host:beginPlay", "host-msg-2"));
   var skb = $("btn-skip"); if (skb) skb.addEventListener("click", hostCmd("host:skip", "host-msg-2"));
   var rb = $("btn-reset"); if (rb) rb.addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset", "host-msg")(); });
   var rb2 = $("btn-reset-2"); if (rb2) rb2.addEventListener("click", function () { if (window.confirm("Reset semua tim dan skor?")) hostCmd("host:reset", "host-msg-2")(); });
@@ -95,26 +95,25 @@
     renderPasalOverlay(s);
     renderRevealPopup(s);
     renderLobby(s);
+    renderPreround(s);
     renderBetweenIntro(s);
     renderWinnerScreen(s);
   });
 
   function handlePhaseTransition(s) {
     var isNewRound = s.phase === "playing" && s.roundIndex !== prevRoundIndex;
-    if (isNewRound) {
-      showRoundIntro(s);
-    }
+    if (isNewRound) showRoundIntro(s);
+    prevPhase = s.phase;
     prevRoundIndex = s.roundIndex;
   }
 
   function showRoundIntro(s) {
-    var info = ROUND_INFO[s.roundKey] || { desc: "" };
     var intro = $("round-intro");
     var title = $("round-intro-title");
     var desc = $("round-intro-desc");
     if (!intro || !title) return;
     title.textContent = "RONDE " + (s.roundIndex + 1) + ": " + (s.roundTitle || "").toUpperCase();
-    desc.textContent = info.desc || "";
+    desc.textContent = s.roundDesc || "";
     intro.hidden = false;
     intro.classList.remove("show");
     void intro.offsetWidth;
@@ -127,24 +126,41 @@
     }, 3000);
   }
 
+  // Switch layout berdasarkan phase: lobby | preround | playing/between | finished
   function renderPhaseLayout(s) {
     var lobby = $("lobby-screen");
+    var preround = $("preround-screen");
     var game = $("game-layout");
     var below = $("below-fold");
     var isLobby = s.phase === "lobby";
+    var isPreround = s.phase === "preround";
+    var isGame = s.phase === "playing" || s.phase === "between" || s.phase === "finished";
+
     if (lobby) lobby.hidden = !isLobby;
-    if (game) game.hidden = isLobby;
-    if (below) below.hidden = isLobby;
+    if (preround) preround.hidden = !isPreround;
+    if (game) game.hidden = !isGame;
+    if (below) below.hidden = !isGame;
+  }
+
+  function renderPreround(s) {
+    if (s.phase !== "preround") return;
+    var badge = $("preround-badge");
+    var title = $("preround-title");
+    var desc = $("preround-desc");
+    if (badge) badge.textContent = "Ronde " + (s.roundIndex + 1) + " dari " + s.roundCount;
+    if (title) title.textContent = (s.roundTitle || "").toUpperCase();
+    if (desc) desc.textContent = s.roundDesc || "";
   }
 
   function renderPanel() {
     if (!state) return;
     var s = state;
-    var phaseText = { lobby: "Menunggu host", playing: "Sedang berlangsung", between: "Jeda antar ronde", finished: "Permainan selesai" };
+    var phaseText = { lobby: "Menunggu host", preround: "Bersiap", playing: "Sedang berlangsung", between: "Jeda antar ronde", finished: "Permainan selesai" };
     var pl = $("phase-label"); if (pl) pl.textContent = phaseText[s.phase] || s.phase;
 
     var title = "Jejak Wawasan Nusantara";
-    if (s.phase === "playing") title = s.roundTitle;
+    if (s.phase === "preround") title = "Bersiap: " + (s.roundTitle || "");
+    else if (s.phase === "playing") title = s.roundTitle;
     else if (s.phase === "between") title = "Berikutnya: " + (s.nextRoundTitle || "");
     else if (s.phase === "finished") title = "Juara ada di papan skor";
     var rt = $("round-title"); if (rt) rt.textContent = title;
@@ -152,10 +168,12 @@
     var timer = "";
     if (s.phase === "playing") timer = "Sisa waktu ronde " + fmt(s.roundLeft);
     else if (s.phase === "between") timer = "Mulai dalam " + s.betweenLeft + " detik";
+    else if (s.phase === "preround") timer = "Menunggu host klik Mulai Ronde";
     var tm = $("timer"); if (tm) tm.textContent = timer;
 
     var prompt = "";
     if (s.phase === "lobby") prompt = "Buka alamat di HP, masukkan nama dan nama tim. Host menekan Mulai saat semua siap.";
+    else if (s.phase === "preround") prompt = s.roundDesc || "";
     else if (s.phase === "playing" && s.stage) prompt = s.stage.prompt || "";
     var pm = $("prompt"); if (pm) pm.textContent = prompt;
 
@@ -272,10 +290,8 @@
     if (s.phase !== "lobby") return;
     var count = (s.teams || []).length;
     var cEl = $("lobby-team-count"); if (cEl) cEl.textContent = count;
-
     var waiting = $("lobby-waiting");
     if (waiting) waiting.hidden = count > 0;
-
     var grid = $("lobby-teams-grid");
     if (!grid) return;
     var sig = (s.teams || []).map(function (t) { return t.id + "|" + t.name + "|" + t.color; }).join("::");
@@ -341,7 +357,6 @@
     $("reveal-sub").textContent = subText;
   }
 
-  // Signature-based skip untuk cegah re-render flashing animasi
   var winnerSig = null;
   function renderWinnerScreen(s) {
     var scr = $("winner-screen");
@@ -349,8 +364,6 @@
     var active = s.phase === "finished" && (s.scoreboard || []).length > 0;
     scr.hidden = !active;
     if (!active) { winnerSig = null; return; }
-
-    // Skip rebuild kalau data sama (biarkan animasi stay di frame terakhir)
     var sig = (s.scoreboard || []).map(function (t) { return t.id + ":" + t.score; }).join("|");
     if (sig === winnerSig) return;
     winnerSig = sig;
@@ -418,7 +431,7 @@
     if (!labelsLayer) return;
     var hideTeams = !!s.hideTeamsOnDisplay;
     var activeTeam = [];
-    if (!hideTeams && s.phase !== "lobby") {
+    if (!hideTeams && (s.phase === "playing" || s.phase === "between" || s.phase === "finished")) {
       (s.teams || []).forEach(function (t) {
         var key = "team:" + t.id;
         activeTeam.push(key);
@@ -441,7 +454,7 @@
     sweepLabels("base:", activeTeam);
 
     var activeZone = [];
-    if (s.phase !== "lobby") {
+    if (s.phase === "playing") {
       (s.zones || []).forEach(function (z) {
         var key = "zone:" + z.code;
         activeZone.push(key);

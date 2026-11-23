@@ -1,179 +1,235 @@
 <!doctype html>
 <html lang="id">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Jejak Wawasan Nusantara - Layar</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="display">
-
-  <!-- LOBBY SCREEN: tampil waktu phase == "lobby", gaya Kahoot/Quizizz -->
-  <div id="lobby-screen" class="lobby-screen">
-    <div class="lobby-top">
-      <img id="lobby-logo" class="lobby-logo pixel-img" alt="" width="64" height="64">
-      <div>
-        <p class="lobby-sub">Game PPKN</p>
-        <h1 class="lobby-title">JEJAK WAWASAN NUSANTARA</h1>
-      </div>
-    </div>
-
-    <div class="lobby-main">
-      <div class="lobby-join-card">
-        <p class="label">Gabung Dengan Scan QR</p>
-        <div id="lobby-qrcode" class="qrcode big"></div>
-        <p class="lobby-or">atau buka</p>
-        <p id="lobby-join-url" class="join-url big"></p>
-      </div>
-
-      <div class="lobby-teams-card">
-        <div class="lobby-teams-header">
-          <p class="label"><span id="lobby-team-count">0</span> tim siap bermain</p>
-          <p class="muted small">Max 15 tim. Nama tim sama = gabung tim yang sama.</p>
-        </div>
-        <div id="lobby-teams-grid" class="lobby-teams-grid"></div>
-        <div id="lobby-waiting" class="lobby-waiting">
-          <p class="lobby-waiting-text">Menunggu tim masuk...</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="lobby-controls">
-      <div class="card lobby-host-card" id="lobby-host">
-        <p class="label">Kontrol Host</p>
-        <div id="host-login" class="row">
-          <input id="pin" type="password" placeholder="PIN host" maxlength="12" aria-label="PIN host">
-          <button id="pin-btn" class="btn" type="button">Buka</button>
-        </div>
-        <div id="host-controls" class="row" hidden>
-          <button id="btn-start" class="btn lobby-start" type="button">MULAI PERMAINAN</button>
-          <button id="btn-reset" class="btn ghost danger" type="button">Reset</button>
-        </div>
-        <p id="host-msg" class="status" role="status"></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN GAME LAYOUT (hidden during lobby) -->
-  <main id="game-layout" class="layout">
-    <section class="map-wrap">
-      <canvas id="map" width="1200" height="800" aria-label="Peta permainan"></canvas>
-      <div id="map-labels" class="map-labels" aria-hidden="true"></div>
-
-      <!-- Round intro banner (muncul tiap awal ronde) -->
-      <div id="round-intro" class="round-intro" hidden>
-        <div class="round-intro-inner">
-          <p class="round-intro-small">Ronde Dimulai</p>
-          <h2 id="round-intro-title"></h2>
-          <p id="round-intro-desc" class="round-intro-desc"></p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jejak Wawasan Nusantara - Layar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="display">
+    <!-- LOBBY SCREEN -->
+    <div id="lobby-screen" class="lobby-screen">
+      <div class="lobby-top">
+        <img
+          id="lobby-logo"
+          class="lobby-logo pixel-img"
+          alt=""
+          width="64"
+          height="64"
+        />
+        <div>
+          <p class="lobby-sub">Game PPKN</p>
+          <h1 class="lobby-title">JEJAK WAWASAN NUSANTARA</h1>
         </div>
       </div>
 
-      <!-- Between-round banner -->
-      <div id="between-intro" class="between-intro" hidden>
-        <div class="round-intro-inner">
-          <p class="round-intro-small">Jeda</p>
-          <h2 id="between-intro-title"></h2>
-          <p id="between-intro-countdown" class="round-intro-desc"></p>
+      <div class="lobby-main">
+        <div class="lobby-join-card">
+          <p class="label">Gabung Dengan Scan QR</p>
+          <div id="lobby-qrcode" class="qrcode big"></div>
+          <p class="lobby-or">atau buka</p>
+          <p id="lobby-join-url" class="join-url big"></p>
         </div>
-      </div>
 
-      <div id="reveal-popup" class="reveal-popup" hidden>
-        <div class="reveal-inner">
-          <p class="reveal-small">Jawaban Benar</p>
-          <h2 id="reveal-title"></h2>
-          <p id="reveal-sub" class="reveal-sub"></p>
-        </div>
-      </div>
-      <div id="pasal-overlay" class="pasal-overlay" hidden>
-        <div class="pasal-overlay-inner">
-          <p class="label">Soal</p>
-          <h2 id="pasal-overlay-q"></h2>
-          <p id="pasal-overlay-timer" class="pasal-overlay-timer"></p>
-          <p class="muted">Tim menjawab di HP masing-masing.<br>Posisi disembunyikan sampai semua tim mengunci jawaban.</p>
-          <div id="pasal-lock-counter" class="lock-counter"></div>
-        </div>
-      </div>
-
-      <!-- WINNER SCREEN: podium + full leaderboard + confetti -->
-      <div id="winner-screen" class="winner-screen" hidden>
-        <div class="confetti" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="winner-inner">
-          <p class="reveal-small">Juara Jejak Wawasan Nusantara</p>
-          <div id="winner-podium" class="winner-podium"></div>
-          <div class="winner-leaderboard-wrap">
-            <p class="label">Leaderboard Lengkap</p>
-            <ol id="winner-leaderboard" class="winner-leaderboard"></ol>
+        <div class="lobby-teams-card">
+          <div class="lobby-teams-header">
+            <p class="label">
+              <span id="lobby-team-count">0</span> tim siap bermain
+            </p>
+            <p class="muted small">
+              Max 15 tim. Nama tim sama = gabung tim yang sama.
+            </p>
           </div>
-          <p id="winner-note" class="muted">Tekan Reset untuk memulai permainan baru.</p>
+          <div id="lobby-teams-grid" class="lobby-teams-grid"></div>
+          <div id="lobby-waiting" class="lobby-waiting">
+            <p class="lobby-waiting-text">Menunggu tim masuk...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="lobby-controls">
+        <div class="card lobby-host-card" id="lobby-host">
+          <p class="label">Host Control</p>
+          <form id="host-login-form" class="row" autocomplete="off">
+            <input
+              id="pin"
+              type="password"
+              placeholder="PIN host"
+              maxlength="12"
+              aria-label="PIN host"
+            />
+            <button id="pin-btn" class="btn" type="submit">Buka</button>
+          </form>
+          <div id="host-controls" class="row" hidden>
+            <button id="btn-start" class="btn lobby-start" type="button">
+              MULAI PERMAINAN
+            </button>
+            <button id="btn-reset" class="btn ghost danger" type="button">
+              Reset
+            </button>
+          </div>
+          <p id="host-msg" class="status" role="status"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREROUND SCREEN - tutorial/rules per ronde, nunggu host klik Lanjut -->
+    <div id="preround-screen" class="preround-screen" hidden>
+      <div class="preround-inner">
+        <p class="preround-small">Bersiap untuk</p>
+        <p id="preround-badge" class="preround-badge">Ronde 1 dari 3</p>
+        <h1 id="preround-title" class="preround-title">Nama Ronde</h1>
+        <div class="preround-desc-wrap">
+          <p id="preround-desc" class="preround-desc">
+            Deskripsi ronde di sini.
+          </p>
+        </div>
+        <div class="preround-controls">
+          <button id="btn-begin" class="btn preround-begin" type="button">
+            MULAI RONDE
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GAME LAYOUT -->
+    <main id="game-layout" class="layout">
+      <section class="map-wrap">
+        <canvas
+          id="map"
+          width="1200"
+          height="800"
+          aria-label="Peta permainan"
+        ></canvas>
+        <div id="map-labels" class="map-labels" aria-hidden="true"></div>
+
+        <div id="round-intro" class="round-intro" hidden>
+          <div class="round-intro-inner">
+            <p class="round-intro-small">Ronde Dimulai</p>
+            <h2 id="round-intro-title"></h2>
+            <p id="round-intro-desc" class="round-intro-desc"></p>
+          </div>
+        </div>
+
+        <div id="between-intro" class="between-intro" hidden>
+          <div class="round-intro-inner">
+            <p class="round-intro-small">Jeda</p>
+            <h2 id="between-intro-title"></h2>
+            <p id="between-intro-countdown" class="round-intro-desc"></p>
+          </div>
+        </div>
+
+        <div id="reveal-popup" class="reveal-popup" hidden>
+          <div class="reveal-inner">
+            <p class="reveal-small">Jawaban Benar</p>
+            <h2 id="reveal-title"></h2>
+            <p id="reveal-sub" class="reveal-sub"></p>
+          </div>
+        </div>
+        <div id="pasal-overlay" class="pasal-overlay" hidden>
+          <div class="pasal-overlay-inner">
+            <p class="label">Soal</p>
+            <h2 id="pasal-overlay-q"></h2>
+            <p id="pasal-overlay-timer" class="pasal-overlay-timer"></p>
+            <p class="muted">
+              Tim menjawab di HP masing-masing.<br />Posisi disembunyikan sampai
+              semua tim mengunci jawaban.
+            </p>
+            <div id="pasal-lock-counter" class="lock-counter"></div>
+          </div>
+        </div>
+
+        <div id="winner-screen" class="winner-screen" hidden>
+          <div class="confetti" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="winner-inner">
+            <p class="reveal-small">Juara Jejak Wawasan Nusantara</p>
+            <div id="winner-podium" class="winner-podium"></div>
+            <div class="winner-leaderboard-wrap">
+              <p class="label">Leaderboard Lengkap</p>
+              <ol id="winner-leaderboard" class="winner-leaderboard"></ol>
+            </div>
+            <p id="winner-note" class="muted">
+              Tekan Reset untuk memulai permainan baru.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card">
+          <p class="label">Papan skor</p>
+          <ol id="ranking" class="ranking"></ol>
+        </div>
+
+        <div class="card" id="host">
+          <p class="label">Host</p>
+          <div id="host-controls-2" class="row">
+            <button id="btn-skip" class="btn ghost" type="button">
+              Lewati tahap
+            </button>
+            <button id="btn-reset-2" class="btn ghost danger" type="button">
+              Reset
+            </button>
+          </div>
+          <p id="host-msg-2" class="status" role="status"></p>
+        </div>
+      </aside>
+    </main>
+
+    <section class="below-fold" id="below-fold">
+      <div class="card">
+        <div class="brand-row">
+          <img
+            id="logo-emblem"
+            class="emblem pixel-img"
+            alt=""
+            width="40"
+            height="40"
+          />
+          <div>
+            <p id="phase-label" class="label">Menunggu</p>
+            <h2 id="round-title">Jejak Wawasan Nusantara</h2>
+          </div>
+        </div>
+        <p id="timer" class="timer"></p>
+        <p id="prompt" class="prompt"></p>
+        <div id="stage-extra"></div>
+      </div>
+
+      <div class="card join-card">
+        <p class="label">Gabung Game</p>
+        <div class="join-grid">
+          <div class="qr-wrap">
+            <div id="qrcode" class="qrcode"></div>
+            <p class="muted small qr-caption">Scan QR untuk gabung</p>
+          </div>
+          <div class="join-info">
+            <p class="small" style="margin: 0 0 6px">
+              Atau buka link berikut di HP:
+            </p>
+            <p id="join-url" class="join-url"></p>
+            <ul id="urls" class="urls"></ul>
+            <p id="team-count" class="muted small"></p>
+            <p class="muted small">Putar HP ke landscape saat bermain.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <aside class="side">
-      <div class="card">
-        <p class="label">Papan skor</p>
-        <ol id="ranking" class="ranking"></ol>
-      </div>
-
-      <div class="card" id="host">
-        <p class="label">Kontrol host</p>
-        <div id="host-login-2" class="row" hidden>
-          <input id="pin2" type="password" placeholder="PIN host" maxlength="12" aria-label="PIN host">
-          <button id="pin-btn-2" class="btn" type="button">Buka</button>
-        </div>
-        <div id="host-controls-2" class="row">
-          <button id="btn-skip" class="btn ghost" type="button">Lewati tahap</button>
-          <button id="btn-reset-2" class="btn ghost danger" type="button">Reset</button>
-        </div>
-        <p id="host-msg-2" class="status" role="status"></p>
-      </div>
-    </aside>
-  </main>
-
-  <section class="below-fold" id="below-fold">
-    <div class="card">
-      <div class="brand-row">
-        <img id="logo-emblem" class="emblem pixel-img" alt="" width="40" height="40">
-        <div>
-          <p id="phase-label" class="label">Menunggu</p>
-          <h2 id="round-title">Jejak Wawasan Nusantara</h2>
-        </div>
-      </div>
-      <p id="timer" class="timer"></p>
-      <p id="prompt" class="prompt"></p>
-      <div id="stage-extra"></div>
-    </div>
-
-    <div class="card join-card">
-      <p class="label">Gabung Game</p>
-      <div class="join-grid">
-        <div class="qr-wrap">
-          <div id="qrcode" class="qrcode"></div>
-          <p class="muted small qr-caption">Scan QR untuk gabung</p>
-        </div>
-        <div class="join-info">
-          <p class="small" style="margin: 0 0 6px;">Atau buka link berikut di HP:</p>
-          <p id="join-url" class="join-url"></p>
-          <ul id="urls" class="urls"></ul>
-          <p id="team-count" class="muted small"></p>
-          <p class="muted small">Putar HP ke landscape saat bermain.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="pixelart.js"></script>
-  <script src="display.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="pixelart.js"></script>
+    <script src="display.js"></script>
+  </body>
 </html>

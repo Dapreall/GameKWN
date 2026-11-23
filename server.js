@@ -16,6 +16,7 @@ const SPAWN_R = 290, SPEED = 170, PICK_R = 36, BASE_R = 80, TICK_MS = 50;
 const BETWEEN_SECONDS = 8, RAKIT_RESPAWN_MS = 4000;
 const PASAL_Q_TIME = 20, PASAL_HOLD = 3, PASAL_REVEAL = 5, PASAL_GAP = 2;
 const PILAH_CARD_TIME = 12, PILAH_GAP = 2, PILAH_RESULT_TIME = 3;
+const PILAH_ZONE_R = 110;
 const TEAM_R = 14, WATER_SPEED_MULT = 0.45, PIECE_CLEAR_R = 36, OBSTACLE_PAD = 8;
 
 const PALETTE = [
@@ -24,9 +25,12 @@ const PALETTE = [
   "#c05621", "#2f855a", "#6b46c1", "#b83280", "#276749",
 ];
 const ROUND_DEFS = [
-  { key: "rakit", title: "Rakit Nusantara", seconds: 240 },
-  { key: "pasal", title: "Jelajah Wawasan", seconds: 260 },
-  { key: "pilah", title: "Pilah Astagatra", seconds: 180 },
+  { key: "rakit", title: "Rakit Nusantara", seconds: 240,
+    desc: "Kumpulkan 9 potongan Peta Nusantara: 5 pulau besar + Bendera, Pancasila, UUD 1945, Garuda. Dekati potongan lalu tekan Ambil. Bawa ke pangkalan tim (lingkaran titik). Salah ambil? Tekan Buang. Tiap jenis potongan yang terpasang: +10 poin." },
+  { key: "pasal", title: "Jelajah Wawasan", seconds: 260,
+    desc: "10 soal tentang 4 aspek Pancagatra: Politik, Ekonomi, Sosial Budaya, Hankam. Lari ke zona yang kamu rasa benar, tekan Kunci. Setelah lock, karakter tidak bisa gerak. Semua tim lock atau waktu habis -> jawaban benar muncul. Benar pertama +20, berikutnya +10, salah -5." },
+  { key: "pilah", title: "Pilah Astagatra", seconds: 180,
+    desc: "12 kartu pernyataan: masukkan ke Trigatra (alamiah: geografi, demografi, SKA) atau Pancagatra (sosial: ideologi, politik, ekonomi, sosbud, hankam). Posisi zona BERGERAK tiap kartu! Lock cepat, poin lebih tinggi. Benar: +20, +15, +10, +8, +5 (menurun). Salah: -5 tetap." },
 ];
 const SPAWN_POINTS = [];
 for (let i = 0; i < MAX_TEAMS; i++) {
@@ -35,8 +39,14 @@ for (let i = 0; i < MAX_TEAMS; i++) {
 }
 function pickMap() { return DATA.MAP_PRESETS[Math.floor(Math.random() * DATA.MAP_PRESETS.length)]; }
 const game = {
-  phase: "lobby", roundIndex: -1, roundLeft: 0, betweenLeft: 0,
-  teams: new Map(), pieces: [], round: null, map: pickMap(),
+  phase: "lobby",   // lobby | preround | playing | between | finished
+  roundIndex: -1,
+  roundLeft: 0,
+  betweenLeft: 0,
+  teams: new Map(),
+  pieces: [],
+  round: null,
+  map: pickMap(),
 };
 const lanUrls = [];
 for (const list of Object.values(os.networkInterfaces())) {
@@ -116,6 +126,34 @@ function randomSpot(existingPieces) {
   }
   return { x: CENTER.x, y: CENTER.y + 220 };
 }
+
+// Spot acak untuk zona Pilah: cari dua titik yang jaraknya cukup jauh satu sama lain.
+function randomZoneSpot(avoid) {
+  avoid = avoid || [];
+  for (let tries = 0; tries < 300; tries++) {
+    const x = PILAH_ZONE_R + 40 + Math.random() * (W - 2 * PILAH_ZONE_R - 80);
+    const y = PILAH_ZONE_R + 40 + Math.random() * (H - 2 * PILAH_ZONE_R - 80);
+    // Jauh dari rocks dan air
+    let bad = false;
+    for (const o of game.map.rocks) {
+      if (Math.hypot(x - o.x, y - o.y) < o.r + PILAH_ZONE_R + 20) { bad = true; break; }
+    }
+    if (bad) continue;
+    // Jauh dari spawn points
+    const jauhSpawn = SPAWN_POINTS.every((sp) => Math.hypot(sp.x - x, sp.y - y) > PILAH_ZONE_R + 90);
+    if (!jauhSpawn) continue;
+    // Jauh dari zona lain yang sudah ada
+    let tooClose = false;
+    for (const other of avoid) {
+      if (Math.hypot(other.x - x, other.y - y) < PILAH_ZONE_R * 2 + 60) { tooClose = true; break; }
+    }
+    if (tooClose) continue;
+    return { x, y };
+  }
+  // Fallback: posisi default
+  return avoid.length === 0 ? { x: 405, y: 400 } : { x: 795, y: 400 };
+}
+
 function findOrCreateTeam(name) {
   const key = name.toLowerCase();
   for (const t of game.teams.values()) { if (t.key === key) return { team: t }; }
@@ -219,14 +257,6 @@ function makeRakit() {
   };
 }
 
-function makeQuizRound(bank, cardTimeDefault, pointSchemeFn, labelFn, isCardRound) {
-  // Shared builder: pointSchemeFn(zoneCode, correctCode, prevResults) -> { ok, pts }
-  // labelFn(idx) -> prompt text for display
-  // isCardRound: pilah vs pasal gets different snapshot kind
-  // Not used directly; see makePasal / makePilah below.
-  void bank; void cardTimeDefault; void pointSchemeFn; void labelFn; void isCardRound;
-}
-
 function makePasal() {
   const bank = shuffle(DATA.PASAL_QUESTIONS).slice(0, DATA.PASAL_COUNT);
   let idx = -1;
@@ -274,10 +304,7 @@ function makePasal() {
     stage = "answer"; timeLeft = PASAL_Q_TIME; holdLeft = 0;
     for (const t of game.teams.values()) { t.locked = false; t.lockedZone = null; }
   }
-  function startReveal(now) {
-    autoLockRemaining(now);
-    stage = "reveal"; timeLeft = PASAL_REVEAL;
-  }
+  function startReveal(now) { autoLockRemaining(now); stage = "reveal"; timeLeft = PASAL_REVEAL; }
 
   return {
     key: "pasal", zones: DATA.PASAL_ZONES,
@@ -354,15 +381,43 @@ function makePilah() {
   let holdLeft = 0;
   let cur = null;
   let finished = false;
+  // Zona Pilah dinamis - regenerate tiap kartu baru
+  let currentZones = [];
+
+  function generateZones() {
+    const zoneDefs = DATA.PILAH_ZONES;
+    const zones = [];
+    for (const def of zoneDefs) {
+      const spot = randomZoneSpot(zones);
+      zones.push({ code: def.code, label: def.label, color: def.color, x: spot.x, y: spot.y, r: PILAH_ZONE_R });
+    }
+    return zones;
+  }
 
   function zoneOfTeam(t) {
-    for (const z of DATA.PILAH_ZONES) { if (Math.hypot(t.x - z.x, t.y - z.y) <= z.r) return z; }
+    for (const z of currentZones) { if (Math.hypot(t.x - z.x, t.y - z.y) <= z.r) return z; }
     return null;
   }
+
+  // Skor menurun: +20 benar pertama, trs -3 tiap urutan berikutnya,
+  // floor di +5. Salah: -5 tetap (tidak akumulatif).
+  function calcPoints(ok, correctCountBefore) {
+    if (!ok) return -5;
+    const pts = 20 - 3 * correctCountBefore;
+    return Math.max(5, pts);
+  }
+
+  function countCorrectBefore() {
+    if (!cur) return 0;
+    let n = 0;
+    for (const r of Object.values(cur.results)) if (r.ok) n++;
+    return n;
+  }
+
   function lockAnswer(t, zoneCode, now) {
     if (!cur || t.locked) return;
     const ok = zoneCode === cur.card.type;
-    const pts = zoneCode == null ? 0 : (ok ? 10 : -5);
+    const pts = zoneCode == null ? 0 : calcPoints(ok, countCorrectBefore());
     if (zoneCode != null) t.score += pts;
     cur.results[t.id] = { ok: !!ok, pts, zoneCode, name: t.name, autoLocked: false, at: now };
     t.locked = true; t.lockedZone = zoneCode;
@@ -374,7 +429,7 @@ function makePilah() {
       const z = zoneOfTeam(t);
       const code = z ? z.code : null;
       const ok = code && code === cur.card.type;
-      const pts = code == null ? 0 : (ok ? 10 : -5);
+      const pts = code == null ? 0 : calcPoints(!!ok, countCorrectBefore());
       if (code != null) t.score += pts;
       cur.results[t.id] = { ok: !!ok, pts, zoneCode: code, name: t.name, autoLocked: true, at: now };
       t.locked = true; t.lockedZone = code;
@@ -389,13 +444,17 @@ function makePilah() {
     idx += 1;
     cur = { card: deck[idx], results: {} };
     stage = "answer"; timeLeft = PILAH_CARD_TIME;
+    // REGENERATE zona untuk kartu baru - posisi berpindah!
+    currentZones = generateZones();
     for (const t of game.teams.values()) { t.locked = false; t.lockedZone = null; }
   }
   function startReveal(now) { autoLockRemaining(now); stage = "reveal"; timeLeft = PILAH_RESULT_TIME; }
 
   return {
-    key: "pilah", zones: DATA.PILAH_ZONES,
+    key: "pilah",
+    get zones() { return currentZones; },
     init() {
+      currentZones = generateZones();
       for (const t of game.teams.values()) {
         t.locked = false; t.lockedZone = null;
         const sp = SPAWN_POINTS[t.spawn]; t.x = sp.x; t.y = sp.y;
@@ -449,7 +508,7 @@ function makePilah() {
       return {
         kind: "pilah",
         prompt: cur && stage !== "gap"
-          ? "Bawa kartu ke kategori yang tepat, lalu tekan Kunci."
+          ? "Bawa kartu ke kategori yang tepat, lalu tekan Kunci. Lock cepat = poin lebih tinggi!"
           : (finished ? "Semua kartu selesai." : "Kartu berikutnya segera muncul."),
         card: cur ? cur.card.label : null,
         stage,
@@ -465,42 +524,61 @@ function makePilah() {
 
 const ROUND_MAKERS = { rakit: makeRakit, pasal: makePasal, pilah: makePilah };
 
-function startRound(i) {
-  const def = ROUND_DEFS[i];
+function startPreround(i) {
   game.roundIndex = i;
+  game.phase = "preround";
+  game.round = null;
+  game.pieces = [];
+  game.roundLeft = 0;
+  game.betweenLeft = 0;
+}
+
+function startPlaying() {
+  if (game.roundIndex < 0 || game.roundIndex >= ROUND_DEFS.length) return;
+  const def = ROUND_DEFS[game.roundIndex];
   game.roundLeft = def.seconds;
   game.phase = "playing";
   game.round = ROUND_MAKERS[def.key]();
   game.round.init();
 }
+
 function endRound() {
   if (game.round) game.round.end();
   game.round = null;
   game.roundLeft = 0;
   if (game.roundIndex >= ROUND_DEFS.length - 1) {
-    game.phase = "finished"; game.betweenLeft = 0;
+    game.phase = "finished";
+    game.betweenLeft = 0;
   } else {
-    game.phase = "between"; game.betweenLeft = BETWEEN_SECONDS;
+    // Langsung ke preround ronde berikutnya, nunggu host klik Mulai
+    startPreround(game.roundIndex + 1);
   }
 }
+
 function resetGame() {
-  game.phase = "lobby"; game.roundIndex = -1;
-  game.roundLeft = 0; game.betweenLeft = 0;
-  game.round = null; game.pieces = [];
+  game.phase = "lobby";
+  game.roundIndex = -1;
+  game.roundLeft = 0;
+  game.betweenLeft = 0;
+  game.round = null;
+  game.pieces = [];
   game.teams.clear();
   game.map = pickMap();
   for (const s of io.sockets.sockets.values()) s.data.teamId = null;
   io.emit("reset");
 }
+
 function snapshot() {
   const teams = [...game.teams.values()];
   const round = game.round;
   const def = game.roundIndex >= 0 ? ROUND_DEFS[game.roundIndex] : null;
-  const nextDef = game.phase === "between" ? ROUND_DEFS[game.roundIndex + 1] : null;
+  const nextDef = (game.phase === "between" || game.phase === "preround") && game.roundIndex < ROUND_DEFS.length - 1 ? ROUND_DEFS[game.roundIndex] : null;
   const roundKey = def ? def.key : null;
   const stage = round ? round.snapshot() : null;
+
   const hideTeamsOnDisplay =
     roundKey === "pasal" && stage && (stage.stage === "answer" || stage.stage === "hold");
+
   const teamData = teams.map((t) => ({
     id: t.id, name: t.name, color: t.color,
     x: Math.round(t.x), y: Math.round(t.y),
@@ -511,12 +589,14 @@ function snapshot() {
     members: t.members.size,
     locked: !!t.locked, lockedZone: t.lockedZone || null,
   }));
+
   return {
     phase: game.phase,
     roundIndex: game.roundIndex,
     roundCount: ROUND_DEFS.length,
     roundKey: roundKey,
     roundTitle: def ? def.title : "",
+    roundDesc: def ? def.desc : "",
     roundLeft: Math.max(0, Math.ceil(game.roundLeft)),
     betweenLeft: Math.max(0, Math.ceil(game.betweenLeft)),
     nextRoundTitle: nextDef ? nextDef.title : null,
@@ -618,11 +698,20 @@ io.on("connection", (socket) => {
     else reply(ack, { ok: false, error: "PIN salah." });
   });
 
+  // host:start = masuk preround ronde 0 (dari lobby)
   socket.on("host:start", (ack) => {
     if (!needHost(ack)) return;
     if (game.phase !== "lobby") return reply(ack, { ok: false, error: "Permainan sudah berjalan." });
     if (game.teams.size === 0) return reply(ack, { ok: false, error: "Belum ada tim yang masuk." });
-    startRound(0);
+    startPreround(0);
+    reply(ack, { ok: true });
+  });
+
+  // host:beginPlay = transisi dari preround -> playing
+  socket.on("host:beginPlay", (ack) => {
+    if (!needHost(ack)) return;
+    if (game.phase !== "preround") return reply(ack, { ok: false, error: "Tidak dalam fase preround." });
+    startPlaying();
     reply(ack, { ok: true });
   });
 
@@ -630,6 +719,7 @@ io.on("connection", (socket) => {
     if (!needHost(ack)) return;
     if (game.phase === "playing") endRound();
     else if (game.phase === "between") game.betweenLeft = 0;
+    else if (game.phase === "preround") startPlaying();
     reply(ack, { ok: true });
   });
 
@@ -658,8 +748,9 @@ setInterval(() => {
     if (game.roundLeft <= 0 || r.isDone()) endRound();
   } else if (game.phase === "between") {
     game.betweenLeft -= dt;
-    if (game.betweenLeft <= 0) startRound(game.roundIndex + 1);
+    if (game.betweenLeft <= 0) startPreround(game.roundIndex + 1);
   }
+  // preround: TIDAK ada timer. Nunggu host klik "host:beginPlay"
 }, TICK_MS);
 
 setInterval(() => { io.emit("state", snapshot()); }, TICK_MS);

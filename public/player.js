@@ -97,6 +97,7 @@
 
   function statusFor(me, st) {
     if (state.phase === "lobby") return "Tunggu host memulai permainan.";
+    if (state.phase === "preround") return "Host sedang menjelaskan aturan. Tunggu ya!";
     if (state.phase === "finished") return "Permainan sudah selesai. Lihat papan skor.";
     if (state.phase === "between") return "Ronde berikutnya: " + (state.nextRoundTitle || "") + ".";
     if (!st) return "";
@@ -215,17 +216,23 @@
       lbl.style.color = z.color;
       layer.appendChild(lbl);
     });
-    if (st && st.kind === "pilah" && st.card) {
-      var cardEl = document.createElement("div");
-      cardEl.className = "pmap-card-chip";
-      cardEl.textContent = "Kartu: " + st.card;
-      layer.appendChild(cardEl);
-    }
-    if (st && st.kind === "pasal" && st.prompt && st.stage !== "gap") {
-      var qEl = document.createElement("div");
-      qEl.className = "pmap-question";
-      qEl.textContent = st.prompt;
-      layer.appendChild(qEl);
+  }
+
+  function renderLandscapeQuestion(st) {
+    var q = $("landscape-question");
+    if (!q) return;
+    if (!st) { q.hidden = true; q.textContent = ""; return; }
+    if (st.kind === "pasal" && st.prompt && st.stage !== "gap") {
+      q.textContent = st.prompt;
+      q.classList.remove("card-mode");
+      q.hidden = false;
+    } else if (st.kind === "pilah" && st.card) {
+      q.textContent = "Kartu: " + st.card;
+      q.classList.add("card-mode");
+      q.hidden = false;
+    } else {
+      q.hidden = true;
+      q.textContent = "";
     }
   }
 
@@ -250,6 +257,7 @@
     var roundText = "", timerText = "", prompt = "";
 
     if (state.phase === "lobby") { roundText = "Menunggu host"; prompt = "Tim sudah masuk. Tunggu host memulai."; }
+    else if (state.phase === "preround") { roundText = "Bersiap: " + (state.roundTitle || ""); timerText = "Tunggu host"; prompt = state.roundDesc || ""; }
     else if (state.phase === "playing") { roundText = state.roundTitle; timerText = "Sisa " + fmt(state.roundLeft); prompt = st ? st.prompt : ""; }
     else if (state.phase === "between") { roundText = "Jeda"; timerText = "Mulai dalam " + state.betweenLeft + " detik"; prompt = "Berikutnya: " + (state.nextRoundTitle || ""); }
     else if (state.phase === "finished") { roundText = "Permainan selesai"; prompt = "Lihat papan skor di layar proyektor."; }
@@ -300,11 +308,16 @@
       $("map-status").textContent = statusFor(me, st);
       renderMiniMap(me, st);
       renderPlayerMapLabels(st);
+      renderLandscapeQuestion(st);
+    } else {
+      // Hide landscape question when not in map rounds
+      var q = $("landscape-question");
+      if (q) { q.hidden = true; q.textContent = ""; }
     }
 
     var playingMove = state.phase === "playing";
     show("stick-area", playingMove);
-    document.body.classList.toggle("in-game", playingMove);
+    document.body.classList.toggle("in-game", playingMove || state.phase === "preround" || state.phase === "between" || state.phase === "finished");
 
     var isRakit = playingMove && state.roundKey === "rakit";
     var isLock = playingMove && (state.roundKey === "pasal" || state.roundKey === "pilah");
