@@ -25,11 +25,13 @@ const PIECES = [
 const POOL_SIZE = 14;
 
 // Ronde 2: zona jawaban. Empat aspek Pancagatra dari Wawasan Nusantara.
+// Warna sengaja dipilih yang kontras tinggi vs rumput/pasir/air (hindari
+// hijau & kuning yang nyaru sama tile map).
 const PASAL_ZONES = [
-  { code: "A", label: "Politik",        x: 600, y: 215, r: 90, color: "#e53e3e" },
-  { code: "B", label: "Ekonomi",        x: 795, y: 400, r: 90, color: "#d69e2e" },
-  { code: "C", label: "Sosial Budaya",  x: 600, y: 585, r: 90, color: "#38a169" },
-  { code: "D", label: "Hankam",         x: 405, y: 400, r: 90, color: "#3182ce" },
+  { code: "A", label: "Politik",        x: 600, y: 215, r: 90, color: "#ff3860" }, // merah muda terang
+  { code: "B", label: "Ekonomi",        x: 795, y: 400, r: 90, color: "#ff7f11" }, // oranye neon
+  { code: "C", label: "Sosial Budaya",  x: 600, y: 585, r: 90, color: "#d946ef" }, // magenta
+  { code: "D", label: "Hankam",         x: 405, y: 400, r: 90, color: "#06aed5" }, // cyan terang
 ];
 
 const PASAL_QUESTIONS = [
@@ -52,8 +54,8 @@ const PASAL_COUNT = 10;
 // Trigatra = aspek alamiah (geografi, demografi, sumber kekayaan alam).
 // Pancagatra = aspek sosial (ideologi, politik, ekonomi, sosbud, hankam).
 const PILAH_ZONES = [
-  { code: "trigatra",  label: "Trigatra (Alamiah)", x: 405, y: 400, r: 115, color: "#2f855a" },
-  { code: "pancagatra", label: "Pancagatra (Sosial)", x: 795, y: 400, r: 115, color: "#b7791f" },
+  { code: "trigatra",  label: "Trigatra (Alamiah)", x: 405, y: 400, r: 115, color: "#22c1c3" }, // teal terang
+  { code: "pancagatra", label: "Pancagatra (Sosial)", x: 795, y: 400, r: 115, color: "#ff4081" }, // pink terang
 ];
 
 const PILAH_CARDS = [

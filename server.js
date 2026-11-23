@@ -32,12 +32,67 @@ const ROUND_DEFS = [
   { key: "pilah", title: "Pilah Astagatra", seconds: 180,
     desc: "12 kartu pernyataan: masukkan ke Trigatra (alamiah: geografi, demografi, SKA) atau Pancagatra (sosial: ideologi, politik, ekonomi, sosbud, hankam). Posisi zona BERGERAK tiap kartu! Lock cepat, poin lebih tinggi. Benar: +20, +15, +10, +8, +5 (menurun). Salah: -5 tetap." },
 ];
-const SPAWN_POINTS = [];
-for (let i = 0; i < MAX_TEAMS; i++) {
-  const a = (i / MAX_TEAMS) * Math.PI * 2 - Math.PI / 2;
-  SPAWN_POINTS.push({ x: CENTER.x + SPAWN_R * Math.cos(a), y: CENTER.y + SPAWN_R * Math.sin(a) });
-}
 function pickMap() { return DATA.MAP_PRESETS[Math.floor(Math.random() * DATA.MAP_PRESETS.length)]; }
+
+// Spawn slots untuk tim: 15 booth tersebar di pinggir atas & bawah map.
+// Divalidasi terhadap peta aktif (hindari sungai/jembatan/batu). Hasilnya
+// cache ke game.spawnPoints, jadi perlu di-regenerate tiap kali map berubah.
+function _distToSeg(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 === 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+function generateSpawnPoints(map) {
+  // 8 slot di baris atas, 7 slot di baris bawah. Total 15.
+  const desired = [];
+  const topY = 92, botY = 708;
+  for (let i = 0; i < 8; i++) desired.push({ x: 120 + i * 137, y: topY });
+  for (let i = 0; i < 7; i++) desired.push({ x: 188 + i * 137, y: botY });
+
+  function isGoodSpawn(x, y, taken) {
+    if (x < 90 || x > W - 90 || y < 60 || y > H - 60) return false;
+    // Jauh dari sungai (booth tim harus benar2 di darat kering)
+    for (const r of (map.rivers || [])) {
+      if (_distToSeg(x, y, r.x1, r.y1, r.x2, r.y2) <= r.w / 2 + 40) return false;
+    }
+    // Jauh dari batu (booth harus bisa dilewati tim)
+    for (const o of (map.rocks || [])) {
+      if (Math.hypot(x - o.x, y - o.y) < o.r + BASE_R - 10) return false;
+    }
+    // Jaga jarak antar booth supaya zona drop gak tumpang tindih
+    for (const other of taken) {
+      if (Math.hypot(other.x - x, other.y - y) < 120) return false;
+    }
+    return true;
+  }
+  // Untuk tiap desired, cari posisi valid terdekat (nudge kanan/kiri/atas/bawah).
+  // Nudges di-generate otomatis supaya booth bisa lompatin sungai lebar sekalipun.
+  const result = [];
+  const nudgesX = [];
+  for (let d = 0; d <= 400; d += 20) { nudgesX.push(d); if (d !== 0) nudgesX.push(-d); }
+  const nudgesY = [0, -30, 30, -60, 60, -100, 100, -140, 140, -180, 180, -220, 220];
+  for (const d of desired) {
+    let found = null;
+    outer: for (const dy of nudgesY) {
+      for (const dx of nudgesX) {
+        const x = d.x + dx, y = d.y + dy;
+        if (isGoodSpawn(x, y, result)) { found = { x, y }; break outer; }
+      }
+    }
+    // Fallback akhir: scan acak di manapun selama ada ruang
+    if (!found) {
+      for (let tries = 0; tries < 400 && !found; tries++) {
+        const x = 90 + Math.random() * (W - 180);
+        const y = 80 + Math.random() * (H - 160);
+        if (isGoodSpawn(x, y, result)) found = { x, y };
+      }
+    }
+    result.push(found || d);
+  }
+  return result;
+}
 const game = {
   phase: "lobby",
   roundIndex: -1,
@@ -47,7 +102,9 @@ const game = {
   pieces: [],
   round: null,
   map: pickMap(),
+  spawnPoints: [],
 };
+game.spawnPoints = generateSpawnPoints(game.map);
 const lanUrls = [];
 for (const list of Object.values(os.networkInterfaces())) {
   for (const n of list || []) {
@@ -114,7 +171,7 @@ function randomSpot(existingPieces) {
     for (const o of game.map.rocks) { if (Math.hypot(x - o.x, y - o.y) < o.r + TEAM_R + OBSTACLE_PAD) { bad = true; break; } }
     if (bad) continue;
     if (isInWater(x, y) && !isOnBridge(x, y)) continue;
-    const jauh = SPAWN_POINTS.every((sp) => Math.hypot(sp.x - x, sp.y - y) > 140);
+    const jauh = game.spawnPoints.every((sp) => Math.hypot(sp.x - x, sp.y - y) > 140);
     if (!jauh) continue;
     let tooClose = false;
     for (const p of existing) {
@@ -140,7 +197,7 @@ function randomZoneSpot(avoid) {
       if (Math.hypot(x - o.x, y - o.y) < o.r + PILAH_ZONE_R + 10) return false;
     }
     let minSp = Infinity;
-    for (const sp of SPAWN_POINTS) {
+    for (const sp of game.spawnPoints) {
       const d = Math.hypot(sp.x - x, sp.y - y);
       if (d < minSp) minSp = d;
     }
@@ -190,7 +247,7 @@ function findOrCreateTeam(name) {
   const used = new Set([...game.teams.values()].map((t) => t.spawn));
   let spawn = 0;
   while (used.has(spawn)) spawn++;
-  const sp = SPAWN_POINTS[spawn];
+  const sp = game.spawnPoints[spawn];
   const team = {
     id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
     key, name, color: PALETTE[spawn], spawn,
@@ -230,7 +287,7 @@ function makeRakit() {
         }
       }
       for (const t of game.teams.values()) {
-        const base = SPAWN_POINTS[t.spawn];
+        const base = game.spawnPoints[t.spawn];
         if (!t.carry) {
           if (boardCount(t) >= DATA.PIECES.length) { t.nearPieceId = null; continue; }
           const p = game.pieces.find((q) => !q.holder && !q.respawnAt && dist(q, t) <= PICK_R);
@@ -340,7 +397,7 @@ function makePasal() {
     init() {
       for (const t of game.teams.values()) {
         t.locked = false; t.lockedZone = null;
-        const sp = SPAWN_POINTS[t.spawn]; t.x = sp.x; t.y = sp.y;
+        const sp = game.spawnPoints[t.spawn]; t.x = sp.x; t.y = sp.y;
       }
     },
     tick(now, dt) {
@@ -481,7 +538,7 @@ function makePilah() {
       currentZones = generateZones();
       for (const t of game.teams.values()) {
         t.locked = false; t.lockedZone = null;
-        const sp = SPAWN_POINTS[t.spawn]; t.x = sp.x; t.y = sp.y;
+        const sp = game.spawnPoints[t.spawn]; t.x = sp.x; t.y = sp.y;
       }
     },
     tick(now, dt) {
@@ -584,6 +641,7 @@ function resetGame() {
   game.pieces = [];
   game.teams.clear();
   game.map = pickMap();
+  game.spawnPoints = generateSpawnPoints(game.map);
   for (const s of io.sockets.sockets.values()) s.data.teamId = null;
   io.emit("reset");
 }
@@ -600,7 +658,7 @@ function snapshot() {
   const teamData = teams.map((t) => ({
     id: t.id, name: t.name, color: t.color,
     x: Math.round(t.x), y: Math.round(t.y),
-    spawnX: SPAWN_POINTS[t.spawn].x, spawnY: SPAWN_POINTS[t.spawn].y,
+    spawnX: game.spawnPoints[t.spawn].x, spawnY: game.spawnPoints[t.spawn].y,
     score: t.score, board: t.board, pieces: boardCount(t),
     carryType: t.carry ? pieceType(t.carry) : null,
     canPickup: !!t.nearPieceId,

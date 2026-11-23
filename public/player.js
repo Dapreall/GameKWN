@@ -130,7 +130,8 @@
 
   var pmapCanvas = $("player-map");
   var pmapCtx = pmapCanvas.getContext("2d");
-  var PMAP_W = 320, PMAP_H = 214;
+  // Resolusi lebih tinggi supaya di portrait HP tetap tajam saat di-stretch 100% width.
+  var PMAP_W = 480, PMAP_H = 320;
   pmapCanvas.width = PMAP_W; pmapCanvas.height = PMAP_H;
   var pmapBg = null;
   var pmapKey = null;
@@ -159,7 +160,15 @@
     var now = performance.now();
     (state.zones || []).forEach(function (z) {
       var zx = z.x * sx, zy = z.y * sx, zr = z.r * sx;
+      // Zona: dithering + 2 cincin kontras (gelap luar, warna dalam) supaya
+      // bentuk zona tetap keliatan walau latar map ikut warna-warni.
       PixelArt.ditherCircle(pmapCtx, zx, zy, zr, z.color);
+      pmapCtx.strokeStyle = "rgba(0,0,0,0.85)";
+      pmapCtx.lineWidth = 1.5;
+      pmapCtx.beginPath(); pmapCtx.arc(zx, zy, zr + 1, 0, Math.PI * 2); pmapCtx.stroke();
+      pmapCtx.strokeStyle = z.color;
+      pmapCtx.lineWidth = 1.2;
+      pmapCtx.beginPath(); pmapCtx.arc(zx, zy, zr - 0.6, 0, Math.PI * 2); pmapCtx.stroke();
       if (me && !me.locked) {
         var inside = Math.hypot(me.x - z.x, me.y - z.y) <= z.r;
         if (inside) {

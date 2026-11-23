@@ -232,6 +232,9 @@ body.in-game .controls { display: flex; }
 
 /* ---------- Mini map di HP pemain ---------- */
 .map-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+/* Landscape-only question banner. Disembunyikan secara default (portrait).
+   Muncul kembali di dalam @media landscape. */
+.landscape-question { display: none; }
 .player-map-wrap {
   position: relative;
   width: 100%;
@@ -247,6 +250,22 @@ body.in-game .controls { display: flex; }
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+}
+
+/* PORTRAIT: hemat ruang di map-card supaya mini-map tampil besar.
+   Info ronde & pertanyaan sudah tampil di kartu atas, jadi duplikatnya di
+   dalam map-card disembunyikan. */
+@media (orientation: portrait), (min-aspect-ratio: 1/1) and (max-height: 540px) {
+  /* no-op guard */
+}
+@media (orientation: portrait) {
+  #map-card { padding: 8px; }
+  #map-card .map-head,
+  #map-card #map-prompt,
+  #map-card #map-status { display: none !important; }
+  #map-card .landscape-question { display: none !important; }
+  .player-map-wrap { width: 100%; }
+  #player-map { width: 100%; height: auto; }
 }
 .pmap-labels { position: absolute; inset: 0; pointer-events: none; }
 .pmap-label {

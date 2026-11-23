@@ -465,9 +465,11 @@
           var bkey = "base:" + t.id;
           activeTeam.push(bkey);
           var bl = labelFor(bkey, "map-label map-label-base");
-          bl.textContent = "Papan " + t.pieces + "/9";
+          bl.textContent = t.name + " - " + t.pieces + "/9";
           bl.style.setProperty("--tc", t.color);
-          placeLabel(bl, t.spawnX, t.spawnY + 58);
+          // Baris atas: label di bawah booth. Baris bawah: label di atas booth.
+          var labelOffsetY = (t.spawnY > 400) ? -50 : 60;
+          placeLabel(bl, t.spawnX, t.spawnY + labelOffsetY);
         }
       });
     }
@@ -505,14 +507,22 @@
     (state.zones || []).forEach(function (z) {
       var p = toLow(z.x, z.y);
       var zr = z.r / SCALE_DOWN;
+      // Latar zona lebih solid: dithering warna + 2 cincin kontras gelap/terang
+      // supaya zona gak nyaru sama rumput/pasir di bawahnya.
       PixelArt.ditherCircle(ctx, p[0], p[1], zr, z.color);
+      ctx.strokeStyle = "rgba(0,0,0,0.85)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(p[0], p[1], zr + 0.6, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = z.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(p[0], p[1], zr - 0.4, 0, Math.PI * 2); ctx.stroke();
       PixelArt.drawFlag(ctx, p[0], p[1] + zr - 2, z.color, 1);
       var st = state.stage;
       if (st && st.stage === "reveal" && st.answer === z.code) {
         ctx.strokeStyle = "#ffd54d";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
-        ctx.arc(p[0], p[1], zr + 1, 0, Math.PI * 2);
+        ctx.arc(p[0], p[1], zr + 1.5, 0, Math.PI * 2);
         ctx.stroke();
       }
     });
@@ -520,8 +530,10 @@
     if (showBases) {
       state.teams.forEach(function (t) {
         var p = toLow(t.spawnX, t.spawnY);
-        PixelArt.dashedRing(ctx, p[0], p[1], 80 / SCALE_DOWN, t.color, 18);
-        PixelArt.drawFlag(ctx, p[0] - 10, p[1], t.color, 1);
+        // Lingkaran drop-zone tipis supaya tim tau radius pangkalan
+        PixelArt.dashedRing(ctx, p[0], p[1], 80 / SCALE_DOWN, t.color, 20);
+        // Booth/pangkalan itu sendiri (ukuran lebih besar sedikit supaya keliatan)
+        PixelArt.drawBooth(ctx, p[0], p[1] - 2, t.color, 0.9);
       });
     }
     (state.pieces || []).forEach(function (pc) {

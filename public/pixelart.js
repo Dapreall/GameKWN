@@ -87,29 +87,74 @@
     }
   }
 
+  // Base silhouette tiap potongan (block utama bentuk pulau/simbol).
+  // Dibikin lebih khas supaya gampang dikenali walau dirender kecil.
   var ICONS = {
-    sumatera: [[-6,-5,3,2],[-5,-3,3,2],[-3,-1,3,2],[-1,1,3,2],[1,3,3,2],[3,5,2,2]],
-    jawa: [[-6,0,3,2],[-3,-1,4,3],[1,0,4,2],[5,1,2,2]],
-    kalimantan: [[-4,-4,7,2],[-5,-2,10,5],[-4,3,8,2],[-2,5,4,1]],
-    sulawesi: [[-1,-5,2,11],[-5,-5,3,2],[-5,-3,2,2],[2,-5,4,2],[4,-3,2,2],[-5,3,3,2],[2,3,3,2]],
-    papua: [[-6,-1,3,2],[-5,1,2,2],[-3,-3,9,7]],
-    bendera: [[-6,-6,1,12],[-5,-5,10,3]],
-    pancasila: [[-5,-4,10,3],[-4,-1,8,4],[-2,3,4,2],[-1,-3,2,3]],
-    uud: [[-6,-3,12,6],[-1,-3,2,6],[-5,-4,4,1],[1,-4,4,1]],
-    garuda: [[-1,-3,2,6],[-6,-2,4,2],[-5,0,3,1],[2,-2,4,2],[2,0,3,1],[-1,-5,2,2]],
+    // Pulau — bentuk memanjang mendekati siluet aslinya
+    sumatera:   [[-6,-7,2,3],[-5,-4,3,2],[-4,-2,3,2],[-3,0,3,2],[-2,2,3,2],[-1,4,3,2],[0,6,3,2]],
+    jawa:       [[-7,-1,14,3],[-6,-3,4,2],[-2,-3,5,2],[3,-3,4,2],[-4,2,3,2],[3,2,3,2]],
+    kalimantan: [[-5,-5,10,2],[-6,-3,12,3],[-6,0,12,3],[-5,3,9,2],[-3,5,6,2]],
+    sulawesi:   [[-1,-6,2,12],[-5,-6,3,2],[-5,-4,2,3],[-5,-1,2,2],[2,-5,4,2],[4,-3,2,2],[-5,3,3,2],[2,3,4,3]],
+    papua:      [[-6,-2,3,2],[-5,0,2,2],[-3,-4,9,8],[6,-1,2,2],[4,3,3,2]],
+
+    // Bendera Merah Putih: tiang + 2 panel (merah atas, putih bawah).
+    // Dibagi 2 blok; panel putih di-override ICON_LAYERS.
+    bendera:    [[-6,-7,1,14],[-5,-6,10,3],[-5,-3,10,3]],
+
+    // Pancasila: perisai + bintang kuning di tengah
+    pancasila:  [[-5,-6,10,2],[-6,-4,12,5],[-5,1,10,3],[-3,4,6,2],[-2,6,4,2],[-1,-3,2,2],[-3,-2,6,1],[-2,-1,4,1]],
+
+    // UUD 1945: buku terbuka — sampul + 2 halaman + spine
+    uud:        [[-7,-5,14,2],[-7,-3,6,8],[1,-3,6,8],[-1,-3,2,8],[-7,5,14,2]],
+
+    // Garuda: bentuk burung — kepala, badan, sayap melebar, ekor
+    garuda:     [[-1,-6,2,3],[-3,-4,6,2],[-7,-2,14,2],[-6,0,12,2],[-4,2,8,2],[-2,4,4,2],[-1,6,2,2]],
   };
-  var ICON_ACCENT = { bendera: [[-5,-2,10,3]], pancasila: [[-1,-3,2,3]] };
-  var ICON_ACCENT_COLOR = { bendera: "#fbf6ea", pancasila: "#fff4d6" };
+  // Lapis warna tambahan di atas block utama. Format:
+  //   { typeId: [ { blocks: [...], color: "#..." }, ... ] }
+  // Diurutkan sesuai order; dilukis setelah silhouette utama.
+  var ICON_LAYERS = {
+    bendera: [
+      { blocks: [[-5,-3,10,3]], color: "#ffffff" },             // panel putih
+      { blocks: [[-7,-8,2,2]],  color: "#d4a84a" },             // ujung tiang emas
+    ],
+    pancasila: [
+      // Bintang kuning di pusat perisai (5 titik mendekati bintang segi lima)
+      { blocks: [[-1,-3,2,2]], color: "#ffd54d" },
+      { blocks: [[-2,-2,1,1],[1,-2,1,1],[-3,0,1,1],[2,0,1,1],[-1,1,2,1]], color: "#ffd54d" },
+    ],
+    uud: [
+      // Garis teks di halaman kiri & kanan — bikin keliatan buku
+      { blocks: [[-6,-1,4,1],[-6,1,4,1],[-6,3,4,1]], color: "#1a1410" },
+      { blocks: [[ 2,-1,4,1],[ 2,1,4,1],[ 2,3,4,1]], color: "#1a1410" },
+      // Sedikit highlight sampul atas
+      { blocks: [[-7,-5,14,1]], color: "#ffffff" },
+    ],
+    garuda: [
+      // Mata hitam + paruh kuning
+      { blocks: [[-1,-5,1,1]], color: "#1a1410" },
+      { blocks: [[0,-6,1,1]],  color: "#ffd54d" },
+      // Detail bulu sayap (gradasi gelap)
+      { blocks: [[-6,-1,12,1],[-5,1,10,1]], color: "#8a5a2f" },
+    ],
+    // Pulau-pulau dapat highlight pantai kecil supaya 3D-ish
+    sumatera:   [{ blocks: [[-5,-6,1,1],[-4,-3,1,1],[-3,-1,1,1]], color: "#ffffff" }],
+    jawa:       [{ blocks: [[-6,0,2,1],[4,0,2,1]], color: "#ffffff" }],
+    kalimantan: [{ blocks: [[-5,-4,2,1],[3,-4,2,1]], color: "#ffffff" }],
+    sulawesi:   [{ blocks: [[-1,-5,1,1],[0,2,1,1]], color: "#ffffff" }],
+    papua:      [{ blocks: [[-2,-3,2,1]], color: "#ffffff" }],
+  };
 
   function drawPieceIcon(ctx, x, y, typeId, color, scale, outline) {
     scale = scale || 1;
     outline = outline || "#1a1410";
     var blocks = ICONS[typeId] || [[-5,-5,10,10]];
     drawBlocks(ctx, x, y, blocks, color, outline, scale);
-    var accent = ICON_ACCENT[typeId];
-    if (accent) {
-      var acol = ICON_ACCENT_COLOR[typeId] || "#fbf6ea";
-      drawBlocks(ctx, x, y, accent, acol, null, scale);
+    var layers = ICON_LAYERS[typeId];
+    if (layers) {
+      for (var i = 0; i < layers.length; i++) {
+        drawBlocks(ctx, x, y, layers[i].blocks, layers[i].color, null, scale);
+      }
     }
   }
 
@@ -194,6 +239,32 @@
     scale = scale || 1;
     drawBlocks(ctx, x, y, [[-1, -11, 1, 12]], "#79532c", "#1a1410", scale);
     drawBlocks(ctx, x, y, [[0, -11, 6, 2], [0, -8, 5, 2], [0, -5, 4, 2]], color, "#1a1410", scale);
+  }
+
+  // Booth/pangkalan tim: kios kayu dengan atap berwarna tim, papan kecil
+  // bertuliskan "BASE" di depan. Dibuat landmark yang jelas di pinggir map.
+  function drawBooth(ctx, x, y, color, scale) {
+    scale = scale || 1;
+    var roofDark = shade(color, -0.35);
+    // Bayangan tanah
+    drawBlocks(ctx, x, y, [[-6, 5, 12, 2]], "#1a1410", null, scale * 0.9);
+    // Dinding kios (coklat kayu)
+    drawBlocks(ctx, x, y, [[-5, -1, 10, 6]], "#9c6b3a", "#1a1410", scale);
+    // Garis papan kayu
+    drawBlocks(ctx, x, y, [[-5, 1, 10, 1], [-5, 3, 10, 1]], "#6e4722", null, scale);
+    // Meja counter (gelap)
+    drawBlocks(ctx, x, y, [[-6, 3, 12, 2]], "#5a3a1c", "#1a1410", scale);
+    // Atap bertingkat (warna tim)
+    drawBlocks(ctx, x, y, [[-7, -3, 14, 2]], color, "#1a1410", scale);
+    drawBlocks(ctx, x, y, [[-6, -5, 12, 2]], color, "#1a1410", scale);
+    drawBlocks(ctx, x, y, [[-4, -7, 8, 2]], color, "#1a1410", scale);
+    // Shading atap (bagian bawah lebih gelap)
+    drawBlocks(ctx, x, y, [[-7, -2, 14, 1]], roofDark, null, scale);
+    // Bendera kecil warna tim di ujung atap
+    drawBlocks(ctx, x, y, [[0, -11, 1, 4]], "#79532c", "#1a1410", scale);
+    drawBlocks(ctx, x, y, [[1, -11, 4, 2]], color, "#1a1410", scale);
+    // Papan "BASE" di depan (strip kuning)
+    drawBlocks(ctx, x, y, [[-3, 0, 6, 2]], "#ffd54d", "#1a1410", scale);
   }
 
   function drawDecor(ctx, x, y, kind, scale) {
@@ -409,7 +480,7 @@
     ditherCircle: ditherCircle, dashedRing: dashedRing,
     drawPieceIcon: drawPieceIcon, iconDataURL: iconDataURL,
     drawCharacter: drawCharacter, avatarDataURL: avatarDataURL,
-    drawFlag: drawFlag, drawDecor: drawDecor, drawObstacle: drawObstacle,
+    drawFlag: drawFlag, drawBooth: drawBooth, drawDecor: drawDecor, drawObstacle: drawObstacle,
     buildBackground: buildBackground, drawEmblem: drawEmblem, emblemDataURL: emblemDataURL,
   };
 })(typeof window !== "undefined" ? window : globalThis);
