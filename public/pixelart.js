@@ -87,62 +87,165 @@
     }
   }
 
-  // Base silhouette tiap potongan (block utama bentuk pulau/simbol).
-  // Dibikin lebih khas supaya gampang dikenali walau dirender kecil.
+  // ==================================================================
+  // Piece icons — redesigned untuk lebih mudah dikenali di map & board.
+  // Setiap pulau punya siluet khas (diagonal/horizontal/K-shape/kepala
+  // burung). Simbol Garuda-Pancasila dipecah: Bendera (tiang + merah-putih),
+  // Pancasila (perisai + bintang), UUD 1945 (buku terbuka), Garuda (elang
+  // sayap terkembang).
+  // Format: ICONS[typeId] = array block [x, y, w, h] untuk silhouette utama
+  //         (diisi dengan t.color + outline hitam otomatis).
+  //         ICON_LAYERS[typeId] = array {blocks, color} untuk warna detail
+  //         di atasnya (tanpa outline).
+  // ==================================================================
   var ICONS = {
-    // Pulau — bentuk memanjang mendekati siluet aslinya
-    sumatera:   [[-6,-7,2,3],[-5,-4,3,2],[-4,-2,3,2],[-3,0,3,2],[-2,2,3,2],[-1,4,3,2],[0,6,3,2]],
-    jawa:       [[-7,-1,14,3],[-6,-3,4,2],[-2,-3,5,2],[3,-3,4,2],[-4,2,3,2],[3,2,3,2]],
-    kalimantan: [[-5,-5,10,2],[-6,-3,12,3],[-6,0,12,3],[-5,3,9,2],[-3,5,6,2]],
-    sulawesi:   [[-1,-6,2,12],[-5,-6,3,2],[-5,-4,2,3],[-5,-1,2,2],[2,-5,4,2],[4,-3,2,2],[-5,3,3,2],[2,3,4,3]],
-    papua:      [[-6,-2,3,2],[-5,0,2,2],[-3,-4,9,8],[6,-1,2,2],[4,3,3,2]],
+    // --- 5 PULAU BESAR ---
+    // Sumatera: pulau memanjang NW-SE
+    sumatera: [
+      [-6,-7,3,2],[-5,-5,3,2],[-4,-3,3,2],[-3,-1,3,2],
+      [-2,1,3,2],[-1,3,3,2],[0,5,3,2],[2,6,2,1],
+    ],
+    // Jawa: horizontal tipis East-West
+    jawa: [
+      [-7,-1,14,3],[-6,-3,5,2],[-1,-3,2,2],[3,-3,4,2],
+      [-5,2,3,2],[0,2,2,1],[3,2,3,2],
+    ],
+    // Kalimantan: pulau besar bulky — paling besar bentuknya
+    kalimantan: [
+      [-6,-4,3,2],[-3,-5,8,2],[-6,-3,13,3],[-6,0,13,3],
+      [-5,3,11,2],[-3,5,7,2],
+    ],
+    // Sulawesi: K-shape dengan 4 lengan
+    sulawesi: [
+      [-1,-6,2,13],
+      [-5,-6,3,2],[-6,-4,2,2],
+      [2,-6,3,2],[3,-4,2,2],
+      [-5,3,3,2],[-6,5,2,2],
+      [2,3,3,2],[3,5,2,2],
+    ],
+    // Papua: bentuk kepala burung menghadap timur
+    papua: [
+      [-6,-2,3,2],[-7,0,2,2],[-5,2,2,1],
+      [-3,-4,10,8],[6,-2,2,3],[6,2,1,1],
+    ],
 
-    // Bendera Merah Putih: tiang + 2 panel (merah atas, putih bawah).
-    // Dibagi 2 blok; panel putih di-override ICON_LAYERS.
-    bendera:    [[-6,-7,1,14],[-5,-6,10,3],[-5,-3,10,3]],
-
-    // Pancasila: perisai + bintang kuning di tengah
-    pancasila:  [[-5,-6,10,2],[-6,-4,12,5],[-5,1,10,3],[-3,4,6,2],[-2,6,4,2],[-1,-3,2,2],[-3,-2,6,1],[-2,-1,4,1]],
-
-    // UUD 1945: buku terbuka — sampul + 2 halaman + spine
-    uud:        [[-7,-5,14,2],[-7,-3,6,8],[1,-3,6,8],[-1,-3,2,8],[-7,5,14,2]],
-
-    // Garuda: bentuk burung — kepala, badan, sayap melebar, ekor
-    garuda:     [[-1,-6,2,3],[-3,-4,6,2],[-7,-2,14,2],[-6,0,12,2],[-4,2,8,2],[-2,4,4,2],[-1,6,2,2]],
-  };
-  // Lapis warna tambahan di atas block utama. Format:
-  //   { typeId: [ { blocks: [...], color: "#..." }, ... ] }
-  // Diurutkan sesuai order; dilukis setelah silhouette utama.
-  var ICON_LAYERS = {
+    // --- BENDERA MERAH PUTIH ---
+    // Hanya panel merah di main; sisanya di LAYERS (putih, tiang, knob)
     bendera: [
-      { blocks: [[-5,-3,10,3]], color: "#ffffff" },             // panel putih
-      { blocks: [[-7,-8,2,2]],  color: "#d4a84a" },             // ujung tiang emas
+      [-3,-7,9,3],
     ],
+
+    // --- PANCASILA (perisai + bintang kuning) ---
+    // Main = perisai (akan jadi warna team = kuning muda)
     pancasila: [
-      // Bintang kuning di pusat perisai (5 titik mendekati bintang segi lima)
-      { blocks: [[-1,-3,2,2]], color: "#ffd54d" },
-      { blocks: [[-2,-2,1,1],[1,-2,1,1],[-3,0,1,1],[2,0,1,1],[-1,1,2,1]], color: "#ffd54d" },
+      [-5,-6,10,2],      // atas perisai (lurus)
+      [-6,-4,12,7],      // badan perisai (lebar)
+      [-5,3,10,2],       // dasar atas perisai (mulai meruncing)
+      [-4,5,8,2],
+      [-2,7,4,1],        // ujung bawah perisai (point)
     ],
+
+    // --- UUD 1945 (buku terbuka) ---
+    // Main = sampul coklat (akan diwarnai team color)
     uud: [
-      // Garis teks di halaman kiri & kanan — bikin keliatan buku
-      { blocks: [[-6,-1,4,1],[-6,1,4,1],[-6,3,4,1]], color: "#1a1410" },
-      { blocks: [[ 2,-1,4,1],[ 2,1,4,1],[ 2,3,4,1]], color: "#1a1410" },
-      // Sedikit highlight sampul atas
-      { blocks: [[-7,-5,14,1]], color: "#ffffff" },
+      [-7,-6,14,2],      // sampul atas
+      [-7,-4,6,9],       // halaman kiri (nanti ditutup overlay putih)
+      [1,-4,6,9],        // halaman kanan
+      [-1,-4,2,9],       // spine tengah
+      [-7,5,14,2],       // sampul bawah
     ],
+
+    // --- GARUDA (elang sayap terkembang) ---
+    // Siluet simbolik — kepala, leher, sayap lebar, badan, ekor
     garuda: [
-      // Mata hitam + paruh kuning
-      { blocks: [[-1,-5,1,1]], color: "#1a1410" },
-      { blocks: [[0,-6,1,1]],  color: "#ffd54d" },
-      // Detail bulu sayap (gradasi gelap)
-      { blocks: [[-6,-1,12,1],[-5,1,10,1]], color: "#8a5a2f" },
+      [-1,-7,2,2],       // kepala puncak
+      [-2,-5,4,2],       // kepala bagian bawah
+      [-1,-3,2,1],       // leher
+      [-7,-2,14,2],      // sayap atas (membentang)
+      [-6,0,12,2],       // sayap tengah
+      [-4,2,8,2],        // badan atas
+      [-2,4,4,2],        // badan bawah
+      [-1,6,2,1],        // ekor
     ],
-    // Pulau-pulau dapat highlight pantai kecil supaya 3D-ish
-    sumatera:   [{ blocks: [[-5,-6,1,1],[-4,-3,1,1],[-3,-1,1,1]], color: "#ffffff" }],
-    jawa:       [{ blocks: [[-6,0,2,1],[4,0,2,1]], color: "#ffffff" }],
-    kalimantan: [{ blocks: [[-5,-4,2,1],[3,-4,2,1]], color: "#ffffff" }],
-    sulawesi:   [{ blocks: [[-1,-5,1,1],[0,2,1,1]], color: "#ffffff" }],
-    papua:      [{ blocks: [[-2,-3,2,1]], color: "#ffffff" }],
+  };
+
+  // ICON_LAYERS = detail warna di atas silhouette (tanpa outline)
+  var ICON_LAYERS = {
+    // --- PULAU: highlight pantai putih supaya terlihat terangkat ---
+    sumatera: [
+      { blocks: [[-5,-6,1,1],[-3,-2,1,1],[-1,2,1,1],[1,6,1,1]], color: "#fff4d6" },
+    ],
+    jawa: [
+      { blocks: [[-6,-1,1,1],[5,-1,1,1],[-5,2,1,1]], color: "#fff4d6" },
+    ],
+    kalimantan: [
+      { blocks: [[-5,-3,2,1],[3,-3,2,1],[-4,4,2,1]], color: "#fff4d6" },
+    ],
+    sulawesi: [
+      { blocks: [[-1,-5,1,1],[-1,1,1,1]], color: "#fff4d6" },
+    ],
+    papua: [
+      { blocks: [[-2,-3,2,1],[4,-1,1,1]], color: "#fff4d6" },
+    ],
+
+    // --- BENDERA: panel putih + tiang coklat + ujung emas ---
+    bendera: [
+      { blocks: [[-3,-4,9,3]], color: "#ffffff" },               // panel putih bawah
+      { blocks: [[-4,-8,1,14]], color: "#8c5a24" },              // tiang kayu
+      { blocks: [[-5,-8,1,14]], color: "#5a3a16" },              // bayangan tiang
+      { blocks: [[-5,-9,2,2]], color: "#ffd54d" },               // knob emas atas
+      { blocks: [[-4,-9,1,1]], color: "#fff2b0" },               // kilap knob
+    ],
+
+    // --- PANCASILA: bintang kuning segi-lima di tengah perisai ---
+    pancasila: [
+      // Latar perisai: merah (seperti warna Garuda Pancasila asli)
+      { blocks: [[-4,-3,8,5], [-4,2,8,1], [-3,3,6,1]], color: "#c0392b" },
+      // Highlight pita emas atas perisai
+      { blocks: [[-5,-5,10,1]], color: "#ffd54d" },
+      // Bintang segi lima emas di tengah
+      { blocks: [[-1,-2,2,1]], color: "#ffd54d" },               // puncak bintang
+      { blocks: [[-3,-1,6,1]], color: "#ffd54d" },               // lengan atas
+      { blocks: [[-2,0,4,1]], color: "#ffd54d" },                // badan atas
+      { blocks: [[-3,1,2,1],[1,1,2,1]], color: "#ffd54d" },      // sayap bintang
+      { blocks: [[-2,2,1,1],[1,2,1,1]], color: "#ffd54d" },      // kaki bintang
+      // Kilap bintang (titik putih kecil)
+      { blocks: [[0,0,1,1]], color: "#ffffff" },
+    ],
+
+    // --- UUD 1945: halaman putih + garis teks + judul "1945" ---
+    uud: [
+      // Halaman putih di dalam sampul
+      { blocks: [[-6,-3,5,7]], color: "#f9f4e3" },               // halaman kiri
+      { blocks: [[2,-3,5,7]], color: "#f9f4e3" },                // halaman kanan
+      // Garis-garis teks di kedua halaman (simulasi tulisan)
+      { blocks: [[-5,-2,3,1],[-5,0,3,1],[-5,2,3,1]], color: "#3a2a1a" },
+      { blocks: [[3,-2,3,1],[3,0,3,1],[3,2,3,1]], color: "#3a2a1a" },
+      // Pita judul merah di tengah sampul atas (ciri khas UUD)
+      { blocks: [[-2,-6,4,1]], color: "#c0392b" },
+      // Highlight putih di sampul atas (kilap sampul)
+      { blocks: [[-7,-6,14,1]], color: "#ffffff" },
+    ],
+
+    // --- GARUDA: detail mata, paruh, tanda perisai di dada ---
+    garuda: [
+      // Mahkota emas di atas kepala
+      { blocks: [[-1,-7,2,1]], color: "#ffd54d" },
+      // Mata hitam kecil
+      { blocks: [[-1,-6,1,1]], color: "#1a1410" },
+      { blocks: [[0,-6,1,1]], color: "#1a1410" },
+      // Paruh kuning menonjol ke bawah
+      { blocks: [[0,-4,1,1]], color: "#ffd54d" },
+      // Perisai kecil di dada (simbol Pancasila di dalam Garuda)
+      { blocks: [[-2,2,4,3]], color: "#c0392b" },                // perisai merah
+      { blocks: [[-1,3,2,1]], color: "#ffd54d" },                // bintang mini
+      { blocks: [[0,3,1,1]], color: "#ffffff" },                 // kilap bintang
+      // Garis detail bulu sayap (gelap)
+      { blocks: [[-6,-1,12,1]], color: "#6b4316" },
+      { blocks: [[-5,1,10,1]], color: "#6b4316" },
+      // Highlight sayap atas (bulu terang)
+      { blocks: [[-7,-3,14,1]], color: "#ffe9a8" },
+    ],
   };
 
   function drawPieceIcon(ctx, x, y, typeId, color, scale, outline) {
