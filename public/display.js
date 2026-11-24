@@ -268,6 +268,30 @@
     prevStageAnswer = st ? st.answer : null;
   }
 
+  // Emergency skip — floating, selalu bisa dipakai host untuk skip tahap
+  var emergencySkip = $("emergency-skip");
+  if (emergencySkip) {
+    emergencySkip.addEventListener("click", function () {
+      function doSkip() {
+        socket.emit("host:skip", function (res) {
+          if (res && res.ok) {
+            emergencySkip.textContent = "OK";
+            setTimeout(function () { emergencySkip.textContent = "NEXT ▶"; }, 1000);
+          } else {
+            alert((res && res.error) || "Tidak bisa skip di fase ini.");
+          }
+        });
+      }
+      if (hostOk) { doSkip(); return; }
+      var pin = window.prompt("Masukkan PIN host untuk skip tahap:");
+      if (pin == null) return;
+      authHost(String(pin), function (res) {
+        if (res && res.ok) doSkip();
+        else alert((res && res.error) || "PIN salah.");
+      });
+    });
+  }
+
   // Emergency reset — floating button, selalu bisa dipakai host untuk unstuck
   var emergencyBtn = $("emergency-reset");
   if (emergencyBtn) {
