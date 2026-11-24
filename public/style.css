@@ -2131,3 +2131,66 @@ body.display .layout { min-height: calc(100vh - 32px); }
 .btn.new-session-btn:active { transform: translateY(2px); }
 .winner-actions .muted { max-width: 360px; text-align: center; }
                               
+
+/* ---------- Timer overlay di atas map + timer card besar ---------- */
+.map-timer-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(180deg, var(--card), var(--bg-deep));
+  border: 3px solid var(--gold);
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.15),
+    0 4px 0 var(--bg-deep);
+  padding: 10px 18px;
+  z-index: 4;
+  text-align: center;
+  min-width: 120px;
+}
+.map-timer-overlay.urgent {
+  border-color: var(--accent);
+  animation: urgentPulse 0.9s ease-in-out infinite;
+}
+.map-timer-label {
+  margin: 0 0 4px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-shadow: 1px 1px 0 var(--bg-deep);
+}
+.map-timer-overlay.urgent .map-timer-label { color: var(--accent); }
+.map-timer-value {
+  margin: 0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 28px;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 2px 2px 0 var(--bg-deep);
+}
+.map-timer-overlay.urgent .map-timer-value { color: var(--accent); }
+@keyframes urgentPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Timer card besar di below-fold */
+.timer-card {
+  text-align: center;
+  background: linear-gradient(180deg, var(--card), var(--bg-deep));
+  border: 3px solid var(--gold);
+}
+.timer-card .label {
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.timer.timer-big {
+  font-size: 48px;
+  color: var(--fg);
+  font-family: "Press Start 2P", monospace;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  letter-spacing: 0.05em;
+  text-shadow: 3px 3px 0 var(--bg-deep);
+  line-height: 1.1;
+}

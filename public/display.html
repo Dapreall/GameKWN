@@ -109,6 +109,12 @@
         ></canvas>
         <div id="map-labels" class="map-labels" aria-hidden="true"></div>
 
+        <!-- Timer besar di pojok kanan atas map — selalu keliatan -->
+        <div id="map-timer-overlay" class="map-timer-overlay" hidden>
+          <p class="map-timer-label" id="map-timer-label">Sisa Waktu</p>
+          <p class="map-timer-value" id="map-timer-value">0:00</p>
+        </div>
+
         <div id="round-intro" class="round-intro" hidden>
           <div class="round-intro-inner">
             <p class="round-intro-small">Ronde Dimulai</p>
@@ -197,7 +203,8 @@
     </main>
 
     <section class="below-fold" id="below-fold">
-      <div class="card">
+      <!-- Info card: judul ronde + prompt. Dihide saat finished. -->
+      <div class="card" id="info-card">
         <div class="brand-row">
           <img
             id="logo-emblem"
@@ -211,9 +218,14 @@
             <h2 id="round-title">Jejak Wawasan Nusantara</h2>
           </div>
         </div>
-        <p id="timer" class="timer"></p>
         <p id="prompt" class="prompt"></p>
         <div id="stage-extra"></div>
+      </div>
+
+      <!-- Timer card: terpisah, tulisan besar supaya gampang dibaca -->
+      <div class="card timer-card" id="timer-card" hidden>
+        <p class="label">Sisa Waktu</p>
+        <p id="timer" class="timer timer-big"></p>
       </div>
 
       <div class="card cheat-card" id="display-cheat" hidden>

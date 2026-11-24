@@ -336,17 +336,31 @@
     else if (s.phase === "playing") title = s.roundTitle;
     else if (s.phase === "between")
       title = "Berikutnya: " + (s.nextRoundTitle || "");
-    else if (s.phase === "finished") title = "Juara ada di papan skor";
+    // Saat finished, tidak set teks apa pun — info-card akan disembunyikan.
     var rt = $("round-title");
     if (rt) rt.textContent = title;
 
-    var timer = "";
-    if (s.phase === "playing") timer = "Sisa waktu ronde " + fmt(s.roundLeft);
-    else if (s.phase === "between")
-      timer = "Mulai dalam " + s.betweenLeft + " detik";
-    else if (s.phase === "preround") timer = "Menunggu host klik Mulai Ronde";
+    // Timer text — dipakai di card bawah + overlay di atas map
+    var timerText = "";
+    var timerBigValue = "";
+    var timerLabel = "Sisa Waktu";
+    if (s.phase === "playing") { timerText = fmt(s.roundLeft); timerBigValue = fmt(s.roundLeft); }
+    else if (s.phase === "between") { timerText = s.betweenLeft + " detik"; timerBigValue = s.betweenLeft + "s"; timerLabel = "Ronde berikutnya"; }
+    else if (s.phase === "preround") { timerText = "Menunggu host"; timerBigValue = "--:--"; timerLabel = "Siap-siap"; }
     var tm = $("timer");
-    if (tm) tm.textContent = timer;
+    if (tm) tm.textContent = timerText;
+    // Toggle info-card + timer-card + map overlay berdasarkan fase
+    var isPlayingish = s.phase === "playing" || s.phase === "between" || s.phase === "preround";
+    var infoCard = $("info-card"); if (infoCard) infoCard.hidden = (s.phase === "finished");
+    var tCard = $("timer-card"); if (tCard) tCard.hidden = !isPlayingish;
+    var mto = $("map-timer-overlay");
+    if (mto) {
+      mto.hidden = !isPlayingish;
+      var lbl = $("map-timer-label"); if (lbl) lbl.textContent = timerLabel;
+      var val = $("map-timer-value"); if (val) val.textContent = timerBigValue;
+      // Warna merah jika sisa waktu <= 15 detik saat playing (visual urgency)
+      mto.classList.toggle("urgent", s.phase === "playing" && s.roundLeft <= 15);
+    }
 
     var prompt = "";
     if (s.phase === "lobby")
@@ -841,7 +855,7 @@
         ctx.stroke();
         PixelArt.dashedRing(ctx, p[0], p[1], zr - 2, "#ffffff", 20);
         if (t.carryType) {
-          var pulse = (now / 500) % 1;
+          var pulse = ((now / 500) % 1);
           ctx.strokeStyle = "#ffd54d";
           ctx.lineWidth = 0.8;
           ctx.globalAlpha = 1 - pulse;
@@ -856,14 +870,7 @@
     (state.pieces || []).forEach(function (pc) {
       var p = toLow(pc.x, pc.y);
       var def = pieceDef(pc.type);
-      PixelArt.drawPieceIcon(
-        ctx,
-        p[0],
-        p[1],
-        pc.type,
-        def ? def.color : "#cccccc",
-        1.1,
-      );
+      PixelArt.drawPieceIcon(ctx, p[0], p[1], pc.type, def ? def.color : "#cccccc", 1.1);
     });
     var hideTeams = !!state.hideTeamsOnDisplay;
     if (!hideTeams) {
@@ -877,18 +884,10 @@
         PixelArt.drawCharacter(ctx, sh.x, sh.y, t.color, now, moving, 1);
         if (t.carryType) {
           var d = pieceDef(t.carryType);
-          if (d)
-            PixelArt.drawPieceIcon(
-              ctx,
-              sh.x + 7,
-              sh.y - 11,
-              t.carryType,
-              d.color,
-              0.8,
-            );
+          if (d) PixelArt.drawPieceIcon(ctx, sh.x + 7, sh.y - 11, t.carryType, d.color, 0.8);
         }
         if (t.locked) {
-          var pct = (now / 700) % 1;
+          var pct = ((now / 700) % 1);
           ctx.strokeStyle = "#ffd54d";
           ctx.lineWidth = 0.6;
           ctx.globalAlpha = 1 - pct;
@@ -899,17 +898,10 @@
         }
       });
     }
-    var ids = state.teams.map(function (t) {
-      return t.id;
-    });
-    Object.keys(shown).forEach(function (id) {
-      if (ids.indexOf(id) === -1) delete shown[id];
-    });
+    var ids = state.teams.map(function (t) { return t.id; });
+    Object.keys(shown).forEach(function (id) { if (ids.indexOf(id) === -1) delete shown[id]; });
   }
 
-  function frame() {
-    draw();
-    requestAnimationFrame(frame);
-  }
+  function frame() { draw(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 })();
