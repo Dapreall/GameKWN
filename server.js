@@ -9,7 +9,7 @@ const DATA = require("./data");
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST_PIN = String(process.env.HOST_PIN || "1234");
-const MAX_TEAMS = 15;
+const MAX_TEAMS = 14;
 const W = 1200, H = 800;
 const CENTER = { x: 600, y: 400 };
 const SPAWN_R = 290, SPEED = 170, PICK_R = 36, BASE_R = 80, TICK_MS = 50;
@@ -25,8 +25,8 @@ const PALETTE = [
   "#c05621", "#2f855a", "#6b46c1", "#b83280", "#276749",
 ];
 const ROUND_DEFS = [
-  { key: "rakit", title: "Rakit Nusantara", seconds: 240,
-    desc: "Kumpulkan 9 potongan Peta Nusantara: 5 pulau besar + Bendera, Pancasila, UUD 1945, Garuda. Dekati potongan lalu tekan Ambil. Bawa ke pangkalan tim (lingkaran titik). Salah ambil? Tekan Buang. Tiap jenis potongan yang terpasang: +10 poin." },
+  { key: "rakit", title: "Rakit Nusantara", seconds: 135,
+    desc: "Kumpulkan 9 potongan Peta Nusantara: 5 pulau besar + Bendera, Pancasila, UUD 1945, Garuda. Dekati potongan lalu tekan Ambil. Bawa ke pangkalan tim. Tiap jenis potongan: +10 poin. Bonus urutan juara: tim #1 selesai dapat +(N-1), #2 +(N-2), dst (N = jumlah tim). Waktu 2 menit 15 detik." },
   { key: "pasal", title: "Jelajah Wawasan", seconds: 260,
     desc: "10 soal tentang 5 aspek kesatuan Wawasan Nusantara (IPOLEKSOSBUD-HANKAM): Ideologi, Politik, Ekonomi, Sosial Budaya, Hankam. Lari ke zona yang kamu rasa benar, tekan Kunci. Setelah lock, karakter tidak bisa gerak. Semua tim lock atau waktu habis -> jawaban benar muncul. Benar pertama +20, berikutnya +10, salah -5." },
   { key: "pilah", title: "Pilah Astagatra", seconds: 180,
@@ -45,11 +45,13 @@ function _distToSeg(px, py, x1, y1, x2, y2) {
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
 function generateSpawnPoints(map) {
-  // 8 slot di baris atas, 7 slot di baris bawah. Total 15.
+  // 14 slot: 7 atas + 7 bawah. Dengan min-dist 200 antar booth, 7 slot
+  // per baris pas muat di lebar 1200 (spasi ~175px). Max 14 tim.
   const desired = [];
   const topY = 92, botY = 708;
-  for (let i = 0; i < 8; i++) desired.push({ x: 120 + i * 137, y: topY });
-  for (let i = 0; i < 7; i++) desired.push({ x: 188 + i * 137, y: botY });
+  for (let i = 0; i < 7; i++) desired.push({ x: 110 + i * 175, y: topY });
+  // Offset sedikit di bottom row biar gak lurus vs top (variasi visual)
+  for (let i = 0; i < 7; i++) desired.push({ x: 160 + i * 175, y: botY });
 
   function isGoodSpawn(x, y, taken) {
     if (x < 90 || x > W - 90 || y < 60 || y > H - 60) return false;
@@ -61,9 +63,10 @@ function generateSpawnPoints(map) {
     for (const o of (map.rocks || [])) {
       if (Math.hypot(x - o.x, y - o.y) < o.r + BASE_R - 10) return false;
     }
-    // Jaga jarak antar booth supaya zona drop gak tumpang tindih
+    // Jaga jarak antar booth: minimal 200 supaya lingkaran drop-zone
+    // (radius 80) tidak saling nabrak + ada ruang untuk pemain lewat.
     for (const other of taken) {
-      if (Math.hypot(other.x - x, other.y - y) < 120) return false;
+      if (Math.hypot(other.x - x, other.y - y) < 200) return false;
     }
     return true;
   }
@@ -248,7 +251,7 @@ function findOrCreateTeam(name, playerName) {
       return { team: t };
     }
   }
-  if (game.teams.size >= MAX_TEAMS) return { error: "Jumlah tim sudah penuh (maksimal 15 tim)." };
+  if (game.teams.size >= MAX_TEAMS) return { error: "Jumlah tim sudah penuh (maksimal 14 tim)." };
   const used = new Set([...game.teams.values()].map((t) => t.spawn));
   let spawn = 0;
   while (used.has(spawn)) spawn++;
@@ -265,16 +268,23 @@ function findOrCreateTeam(name, playerName) {
 }
 
 function makeRakit() {
+  // Track urutan tim yang selesai -> dipakai untuk bonus ranking
+  let finishedOrder = [];
   return {
     key: "rakit", zones: [],
     init() {
+      finishedOrder = [];
       game.pieces = [];
       const types = DATA.PIECES.map((p) => p.id);
+      // Jamin tiap tipe punya minimal MIN_PER_TYPE instance supaya tiap tim
+      // bisa kumpulin semua — tidak ada tipe yang "hilang" dari peta.
+      const MIN_PER_TYPE = 2;
       const pool = [];
-      for (const id of types) pool.push(id);
+      for (const id of types) for (let k = 0; k < MIN_PER_TYPE; k++) pool.push(id);
+      // Pool minimum = 9 * 2 = 18. Kalau DATA.POOL_SIZE lebih besar, isi tambahan random.
       while (pool.length < DATA.POOL_SIZE) pool.push(types[Math.floor(Math.random() * types.length)]);
       const shuffled = shuffle(pool);
-      for (let i = 0; i < DATA.POOL_SIZE; i++) {
+      for (let i = 0; i < shuffled.length; i++) {
         const s = randomSpot(game.pieces);
         game.pieces.push({ id: "p" + i, type: shuffled[i], x: s.x, y: s.y, holder: null, respawnAt: 0 });
       }
@@ -282,8 +292,9 @@ function makeRakit() {
     tick(now) {
       for (const p of game.pieces) {
         if (p.respawnAt && now >= p.respawnAt) {
+          // KEEP TYPE — respawn pakai tipe lama supaya pool selalu seimbang
+          // (gak ada tipe yang menghilang dari peta).
           const s = randomSpot(game.pieces);
-          p.type = DATA.PIECES[Math.floor(Math.random() * DATA.PIECES.length)].id;
           p.x = s.x; p.y = s.y; p.respawnAt = 0;
         }
         if (p.holder) {
@@ -308,6 +319,19 @@ function makeRakit() {
               t.board[p.type] = true;
               t.score += 10;
               p.respawnAt = now + RAKIT_RESPAWN_MS;
+              // Cek apakah tim ini baru saja menyelesaikan 9 potongan — kalau iya,
+              // kasih bonus berdasarkan urutan finish.
+              if (boardCount(t) >= DATA.PIECES.length && finishedOrder.indexOf(t.id) === -1) {
+                finishedOrder.push(t.id);
+                const N = game.teams.size;
+                const rank = finishedOrder.length; // 1-indexed
+                const bonus = Math.max(0, N - rank); // #1 -> N-1, last -> 0
+                if (bonus > 0) {
+                  t.score += bonus;
+                  t.finishBonus = bonus;
+                  t.finishRank = rank;
+                }
+              }
             } else {
               const s = randomSpot(game.pieces);
               p.x = s.x; p.y = s.y;

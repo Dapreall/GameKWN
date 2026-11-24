@@ -189,9 +189,13 @@
         pmapCtx.stroke();
       }
     });
+    var hideOthers = !!state.hideTeamsOnDisplay;
     (state.teams || []).forEach(function (t) {
       var tx = t.x * sx, ty = t.y * sx;
       var isMe = t.id === myTeamId;
+      // Saat ronde Pasal fase menjawab/hold, sembunyikan titik tim lain.
+      // Tim sendiri tetap ditampilkan buat navigasi.
+      if (!isMe && hideOthers) return;
       if (isMe) {
         PixelArt.drawCharacter(pmapCtx, tx, ty, t.color, now, true, 0.55);
         if (t.locked) {

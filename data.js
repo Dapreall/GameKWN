@@ -1,12 +1,5 @@
 "use strict";
 
-// Semua isi permainan (potongan, zona, soal, kartu) ada di sini.
-// Tema: Wawasan Nusantara (konsep geopolitik Indonesia berdasarkan Deklarasi
-// Djuanda 1957 dan Pasal 25A UUD NRI 1945).
-
-// Ronde 1: potongan "Peta Wawasan Nusantara". Sembilan potongan berupa lima
-// pulau besar Indonesia (Sumatera, Jawa, Kalimantan, Sulawesi, Papua) dan
-// empat simbol/pilar wawasan nusantara (Bendera, Pancasila, UUD 1945, Garuda).
 const PIECES = [
   {
     id: "sumatera",
@@ -64,15 +57,9 @@ const PIECES = [
   },
 ];
 
-// Jumlah potongan yang beredar di peta sekaligus. Dibuat lebih besar dari
-// jumlah tipe (9) supaya ada duplikasi, dan setiap tipe dijamin minimal
-// muncul satu kali di peta (dijamin di server.js).
 const POOL_SIZE = 14;
 
-// Ronde 2: zona jawaban. LIMA aspek IPOLEKSOSBUD-HANKAM — perwujudan kesatuan
-// Wawasan Nusantara. Di Buku KWN juga disebut 5 aspek Pancagatra (Ketahanan
-// Nasional). Ditata pentagon biar jarak merata. Warna kontras tinggi vs
-// rumput/pasir (hindari hijau & kuning yang nyaru sama tile map).
+
 const PASAL_ZONES = [
   { code: "E", label: "Ideologi",      x: 600, y: 200, r: 90, color: "#a855f7" }, // ungu terang (TOP)
   { code: "A", label: "Politik",       x: 790, y: 320, r: 90, color: "#ff3860" }, // merah muda (kanan atas)
@@ -149,12 +136,7 @@ const PASAL_QUESTIONS = [
 ];
 const PASAL_COUNT = 10;
 
-// Ronde 3: dua zona klasifikasi ASTAGATRA (kerangka Ketahanan Nasional
-// di Buku KWN hal. 261). Astagatra = 8 unsur ketahanan bangsa, terdiri dari:
-//   Trigatra  = aspek alamiah: geografi, demografi/penduduk, sumber kekayaan alam
-//   Pancagatra = aspek sosial: ideologi, politik, ekonomi, sosbud, hankam
-// Note: konsep ini erat kaitannya dengan Wawasan Nusantara karena 5 aspek
-// Pancagatra adalah perwujudan kesatuan Wawasan Nusantara.
+
 const PILAH_ZONES = [
   {
     code: "trigatra",

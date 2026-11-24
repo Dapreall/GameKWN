@@ -256,7 +256,7 @@
     renderStageExtra(s);
     renderRanking(s);
     renderUrls(s);
-    var tc = $("team-count"); if (tc) tc.textContent = s.teams.length + " dari 15 tim sudah masuk";
+    var tc = $("team-count"); if (tc) tc.textContent = s.teams.length + " dari 14 tim sudah masuk";
     // Contekan Astagatra hanya muncul saat ronde Pilah
     var cheat = $("display-cheat");
     if (cheat) cheat.hidden = !(s.phase === "playing" && s.roundKey === "pilah");
