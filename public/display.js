@@ -268,6 +268,31 @@
     prevStageAnswer = st ? st.answer : null;
   }
 
+  // Emergency reset — floating button, selalu bisa dipakai host untuk unstuck
+  var emergencyBtn = $("emergency-reset");
+  if (emergencyBtn) {
+    emergencyBtn.addEventListener("click", function () {
+      function doReset() {
+        if (!window.confirm("RESET DARURAT: semua tim & skor akan direset dan pemain harus join ulang. Lanjut?")) return;
+        socket.emit("host:reset", function (res) {
+          if (res && res.ok) {
+            emergencyBtn.textContent = "OK";
+            setTimeout(function () { emergencyBtn.textContent = "RESET"; }, 1500);
+          } else {
+            alert((res && res.error) || "Gagal reset. Pastikan PIN host benar.");
+          }
+        });
+      }
+      if (hostOk) { doReset(); return; }
+      var pin = window.prompt("Masukkan PIN host untuk reset darurat:");
+      if (pin == null) return;
+      authHost(String(pin), function (res) {
+        if (res && res.ok) doReset();
+        else alert((res && res.error) || "PIN salah.");
+      });
+    });
+  }
+
   // Mute button wiring
   var muteBtn = $("mute-toggle");
   function updateMuteIcon() {

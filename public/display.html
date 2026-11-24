@@ -260,4 +260,26 @@
             <p id="join-url" class="join-url"></p>
             <ul id="urls" class="urls"></ul>
             <p id="team-count" class="muted small"></p>
-            <p class="muted small">Putar HP ke lands
+            <p class="muted small">Putar HP ke landscape saat bermain.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Floating mute toggle (musik + sfx) -->
+    <button id="mute-toggle" class="mute-toggle" type="button" aria-label="Toggle suara">
+      <span id="mute-icon">&#x1F50A;</span>
+    </button>
+
+    <!-- Emergency reset — selalu bisa diklik host (prompt PIN kalau belum auth) -->
+    <button id="emergency-reset" class="emergency-reset" type="button" title="Reset Darurat (host only)">
+      RESET
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="pixelart.js"></script>
+    <script src="audio.js"></script>
+    <script src="display.js"></script>
+  </body>
+</html>
