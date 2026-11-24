@@ -109,12 +109,6 @@
         ></canvas>
         <div id="map-labels" class="map-labels" aria-hidden="true"></div>
 
-        <!-- Timer besar di pojok kanan atas map — selalu keliatan -->
-        <div id="map-timer-overlay" class="map-timer-overlay" hidden>
-          <p class="map-timer-label" id="map-timer-label">Sisa Waktu</p>
-          <p class="map-timer-value" id="map-timer-value">0:00</p>
-        </div>
-
         <div id="round-intro" class="round-intro" hidden>
           <div class="round-intro-inner">
             <p class="round-intro-small">Ronde Dimulai</p>
@@ -182,14 +176,20 @@
       </section>
 
       <aside class="side">
+        <!-- Timer card ditempatkan di atas Papan Skor di sidebar host -->
+        <div class="card timer-card" id="timer-card" hidden>
+          <p class="label">Sisa Waktu</p>
+          <p id="timer" class="timer timer-big"></p>
+        </div>
+
         <div class="card">
           <p class="label">Papan skor</p>
           <ol id="ranking" class="ranking"></ol>
         </div>
 
-        <div class="card" id="host">
+        <div class="card" id="host" hidden>
           <p class="label">Host</p>
-          <div id="host-controls-2" class="row">
+          <div id="host-controls-2" class="row" hidden>
             <button id="btn-skip" class="btn ghost" type="button">
               Lewati tahap
             </button>
@@ -220,12 +220,6 @@
         </div>
         <p id="prompt" class="prompt"></p>
         <div id="stage-extra"></div>
-      </div>
-
-      <!-- Timer card: terpisah, tulisan besar supaya gampang dibaca -->
-      <div class="card timer-card" id="timer-card" hidden>
-        <p class="label">Sisa Waktu</p>
-        <p id="timer" class="timer timer-big"></p>
       </div>
 
       <div class="card cheat-card" id="display-cheat" hidden>
@@ -266,26 +260,4 @@
             <p id="join-url" class="join-url"></p>
             <ul id="urls" class="urls"></ul>
             <p id="team-count" class="muted small"></p>
-            <p class="muted small">Putar HP ke landscape saat bermain.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Floating mute toggle (musik + sfx) -->
-    <button
-      id="mute-toggle"
-      class="mute-toggle"
-      type="button"
-      aria-label="Toggle suara"
-    >
-      <span id="mute-icon">&#x1F50A;</span>
-    </button>
-
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="pixelart.js"></script>
-    <script src="audio.js"></script>
-    <script src="display.js"></script>
-  </body>
-</html>
+            <p class="muted small">Putar HP ke lands

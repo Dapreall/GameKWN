@@ -293,6 +293,18 @@
 
     $("round-title").textContent = roundText;
     $("timer").textContent = timerText;
+    // Timer card: tampilin saat preround/playing/between, hidden saat lobby/finished
+    var tcShow = state.phase === "playing" || state.phase === "preround" || state.phase === "between";
+    show("player-timer-card", tcShow);
+    // Tambah class urgent saat waktu mepet (<=15 dtk di playing)
+    var tcard = $("player-timer-card");
+    if (tcard) {
+      var urgent = state.phase === "playing" && (
+        (st && typeof st.timeLeft === "number" && st.timeLeft <= 10) ||
+        (state.roundLeft <= 15)
+      );
+      tcard.classList.toggle("urgent", !!urgent);
+    }
     $("prompt").textContent = prompt;
     $("status").textContent = statusFor(me, st);
     $("round-title-l").textContent = roundText;

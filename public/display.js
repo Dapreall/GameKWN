@@ -72,7 +72,15 @@
     if (ctrlA) ctrlA.hidden = !loggedIn;
     var ctrlB = $("host-controls-2");
     if (ctrlB) ctrlB.hidden = !loggedIn;
+    // Security: seluruh kartu Host di sidebar hanya terlihat setelah PIN valid.
+    // Default di HTML juga hidden, jadi device yang buka /display tanpa auth
+    // tidak akan melihat tombol host apapun.
+    var hostCard = $("host");
+    if (hostCard) hostCard.hidden = !loggedIn;
   }
+  // Panggil updateHostUI sekali di awal supaya state default UI konsisten
+  // (untuk kasus baru buka /display tanpa auth sebelumnya).
+  setTimeout(function () { try { updateHostUI(); } catch (e) {} }, 0);
   function authHost(pin, cb) {
     socket.emit("host:auth", pin, function (res) {
       hostOk = !!(res && res.ok);
@@ -111,8 +119,33 @@
   var sb = $("btn-start");
   if (sb) sb.addEventListener("click", hostCmd("host:start", "host-msg"));
   var bg2 = $("btn-begin");
-  if (bg2)
-    bg2.addEventListener("click", hostCmd("host:beginPlay", "host-msg-2"));
+  if (bg2) {
+    var bg2Busy = false;
+    bg2.addEventListener("click", function () {
+      if (bg2Busy) return;             // cegah double-click
+      bg2Busy = true;
+      bg2.disabled = true;
+      var origText = bg2.textContent;
+      bg2.textContent = "MEMULAI...";
+      socket.emit("host:beginPlay", function (res) {
+        bg2Busy = false;
+        bg2.disabled = false;
+        bg2.textContent = origText;
+        var m = $("host-msg-2");
+        if (res && res.ok) {
+          if (m) m.textContent = "";
+        } else {
+          if (m) m.textContent = (res && res.error) || "Gagal mulai ronde. Coba lagi.";
+          // Kalau gagal karena state sudah berubah, kasih fallback retry sekali
+          if (res && res.error && res.error.indexOf("preround") >= 0) {
+            setTimeout(function () {
+              socket.emit("host:beginPlay", function () {});
+            }, 300);
+          }
+        }
+      });
+    });
+  }
   var skb = $("btn-skip");
   if (skb) skb.addEventListener("click", hostCmd("host:skip", "host-msg-2"));
   var rb = $("btn-reset");
@@ -353,13 +386,12 @@
     var isPlayingish = s.phase === "playing" || s.phase === "between" || s.phase === "preround";
     var infoCard = $("info-card"); if (infoCard) infoCard.hidden = (s.phase === "finished");
     var tCard = $("timer-card"); if (tCard) tCard.hidden = !isPlayingish;
-    var mto = $("map-timer-overlay");
-    if (mto) {
-      mto.hidden = !isPlayingish;
-      var lbl = $("map-timer-label"); if (lbl) lbl.textContent = timerLabel;
-      var val = $("map-timer-value"); if (val) val.textContent = timerBigValue;
-      // Warna merah jika sisa waktu <= 15 detik saat playing (visual urgency)
-      mto.classList.toggle("urgent", s.phase === "playing" && s.roundLeft <= 15);
+    // (map-timer-overlay dihapus — timer cukup di sidebar card)
+    var tCardSide = $("timer-card");
+    if (tCardSide) {
+      // Urgent (merah pulse) kalau sisa waktu mepet
+      var urgent = (s.phase === "playing" && s.roundLeft <= 15);
+      tCardSide.classList.toggle("urgent", urgent);
     }
 
     var prompt = "";

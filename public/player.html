@@ -47,14 +47,17 @@
         <div class="score">Skor <b id="my-score">0</b></div>
       </header>
 
-      <!-- Info card. Portrait only. -->
+      <!-- Info card: round title + pertanyaan. Portrait only. -->
       <section class="card portrait-only">
-        <div class="row" style="justify-content: space-between">
-          <span id="round-title" class="round-title">Menunggu host</span>
-          <span id="timer" class="timer"></span>
-        </div>
+        <span id="round-title" class="round-title">Menunggu host</span>
         <p id="prompt" class="prompt"></p>
         <p id="status" class="status"></p>
+      </section>
+
+      <!-- Timer card: terpisah, muncul di atas map/board biar jelas kelihatan. Portrait only. -->
+      <section class="card timer-card portrait-only" id="player-timer-card" hidden>
+        <p class="label">Sisa Waktu</p>
+        <p id="timer" class="timer timer-big"></p>
       </section>
 
       <!-- Papan rakit: TIDAK portrait-only lagi. Visible kalo tidak hidden (controlled JS). -->
